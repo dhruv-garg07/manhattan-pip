@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "manhattan-mcp"
+version = "0.1.0"
+description = "MCP Server for Manhattan Memory System - Give AI agents persistent memory"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Agent Architects Studio" }
+]
+keywords = ["mcp", "memory", "ai", "agent", "llm", "claude", "manhattan"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.25.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.scripts]
+manhattan-mcp = "manhattan_mcp.cli:main"
+
+[project.urls]
+Homepage = "https://themanhattanproject.ai"
+Documentation = "https://themanhattanproject.ai/mcp-docs"
+Repository = "https://github.com/agent-architects/manhattan-mcp"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/manhattan_mcp"]
