@@ -35,7 +35,7 @@ from manhattan_mcp.config import get_config, DEFAULT_AGENT_ID
 
 import sys
 import os
-from mcp.server.fastmcp import Context
+
 # Initialize FastMCP server with instructions for AI agents
 mcp = FastMCP(
     "manhattan_remote",
