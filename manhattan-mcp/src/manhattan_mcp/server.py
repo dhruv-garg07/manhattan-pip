@@ -447,7 +447,7 @@ async def get_agent(
     Returns:
         JSON string with the agent record
     """
-    result = await call_api("get_agent", {"agent_id": agent_id})
+    result = await call_api_get("get_agent", {"agent_id": agent_id})
     return json.dumps(result, indent=2)
 
 
