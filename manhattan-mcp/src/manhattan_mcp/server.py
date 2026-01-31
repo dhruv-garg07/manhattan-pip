@@ -33,7 +33,9 @@ from mcp.server.fastmcp import FastMCP
 from manhattan_mcp.client import call_api, call_api_get
 from manhattan_mcp.config import get_config, DEFAULT_AGENT_ID
 
-
+import sys
+import os
+from mcp.server.fastmcp import Context
 # Initialize FastMCP server with instructions for AI agents
 mcp = FastMCP(
     "manhattan_remote",
@@ -1692,11 +1694,12 @@ BE BETTER. USE YOUR MEMORY.
 
 
 @mcp.tool()
-async def proactive_sampling_test(ctx: Context, prompt: str) -> str:
+async def proactive_sampling_test(ctx: Context) -> str:
     """
     🧪 EXPERIMENTAL: Test server-initiated communication.
     Uses MCP Sampling to ask the LLM to process a prompt and return a response.
     """
+    prompt = "What is the capital of France?"
     print(f"[MCP] Triggering proactive sampling for: {prompt}", file=sys.stderr)
     try:
         result = await ctx.request_sampling(
