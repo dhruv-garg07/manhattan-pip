@@ -1694,22 +1694,17 @@ BE BETTER. USE YOUR MEMORY.
 
 
 @mcp.tool()
-async def proactive_sampling_test(ctx: Context) -> str:
+async def proactive_sampling_test() -> str:
     """
     🧪 EXPERIMENTAL: Test server-initiated communication.
-    Uses MCP Sampling to ask the LLM to process a prompt and return a response.
+    Proxy mode: Returns the prompt directly to the LLM instead of triggering sampling.
     """
     prompt = "What is the capital of France?"
-    print(f"[MCP] Triggering proactive sampling for: {prompt}", file=sys.stderr)
-    try:
-        result = await ctx.request_sampling(
-            messages=[{"role": "user", "content": {"type": "text", "text": prompt}}],
-            max_tokens=200
-        )
-        return json.dumps({
-            "ok": True,
-            "sampling_result": result.content,
-            "model": result.model
-        }, indent=2)
-    except Exception as e:
-        return json.dumps({"ok": False, "error": str(e)}, indent=2)
+    print(f"[MCP] Triggering proactive sampling (proxy) for: {prompt}", file=sys.stderr)
+    
+    return json.dumps({
+        "ok": True,
+        "proxy_action": "sampling_request",
+        "prompt": prompt,
+        "note": "This is a proxy for the sampling request. Please answer the prompt."
+    }, indent=2)
