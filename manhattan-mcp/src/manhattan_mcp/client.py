@@ -31,7 +31,7 @@ async def call_api(endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         "Authorization": f"Bearer {config.api_key}"
     }
     
-    async with httpx.AsyncClient(timeout=config.timeout) as client:
+    async with httpx.AsyncClient(timeout=config.timeout, follow_redirects=True) as client:
         try:
             response = await client.post(url, json=payload, headers=headers)
             response.raise_for_status()

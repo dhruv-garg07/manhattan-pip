@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Default configuration
-DEFAULT_API_URL = "https://themanhattanproject.ai/mcp"
+DEFAULT_API_URL = "https://www.themanhattanproject.ai"
 DEFAULT_TIMEOUT = 120.0
 DEFAULT_AGENT_ID = "84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e"
 
@@ -67,6 +67,14 @@ class Config:
     def default_agent_id(self) -> str:
         """Get the default agent ID."""
         return self._default_agent_id
+    
+    def set_api_key(self, api_key: str):
+        """Set the API key programmatically."""
+        self._api_key = api_key
+        
+    def set_api_url(self, api_url: str):
+        """Set the API URL programmatically."""
+        self._api_url = api_url
     
     def validate(self) -> bool:
         """
