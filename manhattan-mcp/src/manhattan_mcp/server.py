@@ -35,6 +35,7 @@ from manhattan_mcp.config import get_config, DEFAULT_AGENT_ID
 
 import sys
 import os
+import asyncio
 
 # Initialize FastMCP server with instructions for AI agents
 mcp = FastMCP(
@@ -1707,4 +1708,23 @@ async def proactive_sampling_test() -> str:
         "proxy_action": "sampling_request",
         "prompt": prompt,
         "note": "This is a proxy for the sampling request. Please answer the prompt."
+    }, indent=2)
+
+
+@mcp.tool()
+async def slow_tool():
+    """Takes 20 seconds."""
+    await asyncio.sleep(20) # Non-blocking wait
+    return json.dumps({
+        "status": "success",
+        "message": "Tool 1 Finished (20s)"
+    }, indent=2)
+
+@mcp.tool()
+async def fast_tool():
+    """Takes 5 seconds."""
+    await asyncio.sleep(5) # Non-blocking wait
+    return json.dumps({
+        "status": "success",
+        "message": "Tool 2 Finished (5s)"
     }, indent=2)
