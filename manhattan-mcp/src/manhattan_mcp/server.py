@@ -1690,3 +1690,23 @@ BE BETTER. USE YOUR MEMORY.
     }, indent=2)
 
 
+
+@mcp.tool()
+async def proactive_sampling_test(ctx: Context, prompt: str) -> str:
+    """
+    🧪 EXPERIMENTAL: Test server-initiated communication.
+    Uses MCP Sampling to ask the LLM to process a prompt and return a response.
+    """
+    print(f"[MCP] Triggering proactive sampling for: {prompt}", file=sys.stderr)
+    try:
+        result = await ctx.request_sampling(
+            messages=[{"role": "user", "content": {"type": "text", "text": prompt}}],
+            max_tokens=200
+        )
+        return json.dumps({
+            "ok": True,
+            "sampling_result": result.content,
+            "model": result.model
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"ok": False, "error": str(e)}, indent=2)
