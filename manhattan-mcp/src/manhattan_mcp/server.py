@@ -1711,20 +1711,91 @@ async def proactive_sampling_test() -> str:
     }, indent=2)
 
 
-@mcp.tool()
-async def slow_tool():
-    """Takes 20 seconds."""
-    await asyncio.sleep(20) # Non-blocking wait
-    return json.dumps({
-        "status": "success",
-        "message": "Tool 1 Finished (20s)"
-    }, indent=2)
+# Inter-tool communication state for demo
+_demo_channel = {
+    "data": None,
+    "response": None,
+    "event_ready": asyncio.Event(),
+    "event_done": asyncio.Event()
+}
 
 @mcp.tool()
-async def fast_tool():
-    """Takes 5 seconds."""
-    await asyncio.sleep(5) # Non-blocking wait
+async def slow_tool(input_text: str) -> str:
+    """
+    Starts running and waits for fast_tool to process some input.
+    
+    This tool demonstrates inter-tool synchronization. It stores the input_text 
+    in a shared channel and waits for fast_tool to pick it up and respond.
+    
+    Args:
+        input_text: The text to be processed by the fast tool.
+    """
+    global _demo_channel
+    
+    # Initialize the channel for this transaction
+    _demo_channel["data"] = input_text
+    _demo_channel["response"] = None
+    _demo_channel["event_done"].clear()
+    _demo_channel["event_ready"].set() # Signal that data is ready for fast_tool
+    
+    print(f"[Slow Tool] Started. Data set: '{input_text}'. Waiting for Fast Tool...", file=sys.stderr)
+    
+    try:
+        # Wait for fast_tool to signal it's done (timeout after 60s)
+        await asyncio.wait_for(_demo_channel["event_done"].wait(), timeout=60.0)
+        
+        response = _demo_channel["response"]
+        print(f"[Slow Tool] Received response from Fast Tool. Finishing.", file=sys.stderr)
+        
+        return json.dumps({
+            "status": "success",
+            "role": "Slow Tool (Coordinator)",
+            "input_sent": input_text,
+            "response_received": response,
+            "message": "Demonstration successful: Synchronized parallel execution completed."
+        }, indent=2)
+        
+    except asyncio.TimeoutError:
+        print("[Slow Tool] Timed out waiting for Fast Tool.", file=sys.stderr)
+        return json.dumps({
+            "status": "error",
+            "message": "Timed out waiting for fast_tool. Did you forget to call it?"
+        }, indent=2)
+    finally:
+        # Cleanup
+        _demo_channel["event_ready"].clear()
+
+@mcp.tool()
+async def fast_tool() -> str:
+    """
+    Processes input provided by the slow_tool and signals completion.
+    
+    This tool must be called while slow_tool is running and waiting. 
+    It retrieves data from the shared channel, processes it, and wakes up slow_tool.
+    """
+    global _demo_channel
+    
+    print("[Fast Tool] Waiting for data from Slow Tool...", file=sys.stderr)
+    
+    # Wait for slow_tool to signal that data is ready
+    await _demo_channel["event_ready"].wait()
+    
+    input_text = _demo_channel["data"]
+    print(f"[Fast Tool] Received input: '{input_text}'. Processing for 5 seconds...", file=sys.stderr)
+    
+    # Simulate processing time
+    await asyncio.sleep(5)
+    
+    # Prepare and send response
+    processed_result = f"PROCESSED_BY_FAST({input_text.upper()})"
+    _demo_channel["response"] = processed_result
+    
+    print("[Fast Tool] Signaling Slow Tool and finishing.", file=sys.stderr)
+    _demo_channel["event_done"].set() # Wake up slow_tool
+    
     return json.dumps({
         "status": "success",
-        "message": "Tool 2 Finished (5s)"
+        "role": "Fast Tool (Worker)",
+        "processed_result": processed_result,
+        "message": "Fast tool finished and replied to Slow tool."
     }, indent=2)
