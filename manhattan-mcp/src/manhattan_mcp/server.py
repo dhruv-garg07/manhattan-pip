@@ -1802,77 +1802,86 @@ async def fast_tool() -> str:
 
 # Mock database to simulate application data
 _APPLICATIONS = {
-    "APP-123": {"name": "Alice Smith", "income": 80000, "debt": 5000},
-    "APP-456": {"name": "Bob Jones", "income": 40000, "debt": 60000}
+    "APP-123": {
+        "name": "Alice Smith", 
+        "income": 80000, 
+        "debt": 5000,
+        "history": "Solid repayment history, no missed payments in 5 years."
+    },
+    "APP-456": {
+        "name": "Bob Jones", 
+        "income": 40000, 
+        "debt": 60000,
+        "history": "Frequent missed payments, high credit utilization."
+    }
 }
 
 @mcp.tool()
-def assess_credit_risk(application_id: str) -> str:
+async def consult_risk_expert(application_id: str) -> str:
     """
-    Analyzes financial data to determine a credit risk score.
-    Use this tool when 'process_loan' requests a risk assessment.
+    Uses an LLM to perform a qualitative risk assessment.
+    This tool does NOT compute numbers; it reads the history and gives an opinion.
     """
-    # In a real scenario, this might involve complex calculations or external API calls
     app_data = _APPLICATIONS.get(application_id)
-    
     if not app_data:
-        return "ERROR: Application ID not found."
-    
-    # Simple logic for the POC
-    if app_data["income"] == 0:
-        return "ERROR: Applicant income is 0. Cannot assess credit risk."
+        return json.dumps({
+            "status": "ERROR",
+            "error": f"Application ID '{application_id}' not found.",
+            "available_ids": list(_APPLICATIONS.keys())
+        }, indent=2)
 
-    dti_ratio = app_data["debt"] / app_data["income"]
-    
-    if dti_ratio < 0.3:
-        return json.dumps({"score": "LOW_RISK", "reasoning": "Healthy debt-to-income ratio."})
-    else:
-        return json.dumps({"score": "HIGH_RISK", "reasoning": "Excessive debt load."})
+    # Return the data and prompt for the AI agent to analyze directly
+    # This is a "proxy" pattern - the agent uses its own LLM to respond
+    return json.dumps({
+        "status": "ANALYSIS_REQUIRED",
+        "tool": "consult_risk_expert",
+        "method": "AGENT_PROXY",
+        "instructions": (
+            "You are acting as a conservative Senior Credit Risk Officer at a bank. "
+            "Analyze the applicant below and provide a risk rating (LOW, MEDIUM, or HIGH) "
+            "with a 1-sentence justification. Then call process_loan with your assessment."
+        ),
+        "applicant_data": {
+            "application_id": application_id,
+            "name": app_data['name'],
+            "income": app_data['income'],
+            "current_debt": app_data['debt'],
+            "credit_history": app_data['history']
+        },
+        "expected_response_format": "Risk: [LOW/MEDIUM/HIGH] - [1-sentence justification]",
+        "next_step": f"After analyzing, call process_loan(application_id='{application_id}', risk_assessment_result='your analysis here')"
+    }, indent=2)
+
 
 @mcp.tool()
 def process_loan(application_id: str, risk_assessment_result: str = None) -> str:
     """
-    Manages the lifecycle of a loan application.
-    
-    Args:
-        application_id: The ID of the loan application (e.g., 'APP-123').
-        risk_assessment_result: (Optional) The output from the 'assess_credit_risk' tool. 
-                                Leave empty to start the process. Provide this value to finalize the loan.
+    The Main Orchestrator.
+    If risk_assessment_result is missing, it pauses and asks for it.
     """
-    # 1. Validate the application exists
     app_data = _APPLICATIONS.get(application_id)
     if not app_data:
         return f"Error: Application {application_id} not found."
 
-    # 2. Check if we have the necessary risk assessment
+    # STATE 1: PAUSED - Need inputs
     if risk_assessment_result is None:
-        # STATE: PAUSED
-        # We don't have the risk score yet. We stop here and instruct the Agent.
         return (
-            f"STATUS: PENDING_ANALYSIS\n"
-            f"I have started processing application {application_id} for {app_data['name']}.\n"
-            f"However, I cannot proceed without a risk assessment.\n\n"
-            f"REQUIRED ACTION: Please call the 'assess_credit_risk' tool with application_id='{application_id}'.\n"
-            f"Once you have the result, call me back using 'process_loan' with this SAME application_id and pass the result into the 'risk_assessment_result' argument."
+            f"STATUS: PAUSED_FOR_INPUT\n"
+            f"Processing for {application_id} halted.\n"
+            f"ACTION REQUIRED: Call tool 'consult_risk_expert' for application '{application_id}'.\n"
+            f"Then, call me back with the result."
         )
     
+    # STATE 2: RESUMED - Have inputs
     else:
-        # STATE: RESUMED
-        # We have the risk score. We can finish the logic.
-        try:
-            risk_data = json.loads(risk_assessment_result)
-            score = risk_data.get("score")
+        # Simple logic: If the LLM said "HIGH", we reject.
+        decision = "APPROVED"
+        if "HIGH" in risk_assessment_result.upper():
+            decision = "REJECTED"
             
-            final_decision = "APPROVED" if score == "LOW_RISK" else "REJECTED"
-            
-            return json.dumps({
-                "status": "COMPLETED",
-                "application_id": application_id,
-                "applicant": app_data['name'],
-                "risk_assessment": score,
-                "final_decision": final_decision,
-                "message": f"Loan processing finalized based on provided risk data."
-            }, indent=2)
-            
-        except json.JSONDecodeError:
-            return "Error: The provided risk_assessment_result was not valid JSON."
+        return json.dumps({
+            "status": "COMPLETED",
+            "applicant": app_data['name'],
+            "risk_report": risk_assessment_result, # This contains the text from the sampled LLM
+            "final_decision": decision
+        }, indent=2)
