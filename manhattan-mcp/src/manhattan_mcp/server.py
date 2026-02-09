@@ -788,34 +788,81 @@ async def auto_remember(
     """
     🧠 **CALL THIS AFTER EVERY USER MESSAGE** to automatically capture important facts.
     
-    This tool analyzes the user's message and automatically extracts
-    any important information worth remembering. It's your autopilot
-    for building comprehensive user memory.
-    
-    ## When to Call
-    - ✅ AFTER every single user message  
-    - ✅ After lengthy user explanations
-    - ✅ When user shares personal/professional details
-    
-    ## What It Captures Automatically
-    - Names, preferences, interests
-    - Dates, deadlines, events
-    - Technical requirements
-    - Decisions and action items
-    - Corrections to previous information
-    
     Args:
         agent_id: Unique identifier for the agent
         user_message: The user's raw message to analyze
     
     Returns:
-        JSON with extracted facts and what was remembered
+        JSON with instructions for extracting and storing memories
     """
-    result = await call_api("process_raw", {
+    agent_id = _normalize_agent_id(agent_id)
+    current_timestamp = datetime.now().isoformat()
+    
+    dialogue_text = f"[{current_timestamp}] User: {user_message}"
+    
+    extraction_prompt = f"""Your task is to extract all valuable information from the following dialogues and convert them into structured memory entries.
+
+[Current Window Dialogues]
+{dialogue_text}
+
+[Requirements]
+1. **Complete Coverage**: Generate enough memory entries to ensure ALL information in the dialogues is captured
+2. **Force Disambiguation**: Absolutely PROHIBIT using pronouns (he, she, it, they, this, that) and relative time (yesterday, today, last week, tomorrow)
+3. **Lossless Information**: Each entry's lossless_restatement must be a complete, independent, understandable sentence
+4. **Precise Extraction**:
+   - keywords: Core keywords (names, places, entities, topic words)
+   - timestamp: Absolute time in ISO 8601 format (if explicit time mentioned in dialogue)
+   - location: Specific location name (if mentioned)
+   - persons: All person names mentioned
+   - entities: Companies, products, organizations, etc.
+   - topic: The topic of this information
+
+[Output Format]
+Return a JSON array, each element is a memory entry:
+
+[
+  {{
+    "lossless_restatement": "Complete unambiguous restatement",
+    "keywords": ["keyword1", "keyword2"],
+    "timestamp": "YYYY-MM-DDTHH:MM:SS or null",
+    "location": "location name or null",
+    "persons": ["name1", "name2"],
+    "entities": ["entity1", "entity2"],
+    "topic": "topic phrase"
+  }}
+]
+
+[Example]
+Dialogues:
+[2025-11-15T14:30:00] Alice: Bob, let's meet at Starbucks tomorrow at 2pm to discuss the new product
+
+Output:
+[
+  {{
+    "lossless_restatement": "Alice suggested at 2025-11-15T14:30:00 to meet with Bob at Starbucks on 2025-11-16T14:00:00 to discuss the new product.",
+    "keywords": ["Alice", "Bob", "Starbucks", "new product", "meeting"],
+    "timestamp": "2025-11-16T14:00:00",
+    "location": "Starbucks",
+    "persons": ["Alice", "Bob"],
+    "entities": ["new product"],
+    "topic": "Product discussion meeting arrangement"
+  }}
+]
+
+Now process the above dialogues. Return ONLY the JSON array, no other explanations.
+If no memorable information is found, return an empty array: []"""
+
+    return json.dumps({
+        "status": "EXTRACTION_REQUIRED",
+        "tool": "auto_remember",
+        "method": "AGENT_PROXY",
         "agent_id": agent_id,
-        "dialogues": [{"speaker": "User", "content": user_message}]
-    })
-    return json.dumps(result, indent=2)
+        "system_instruction": "You are a professional information extraction assistant, skilled at extracting structured, unambiguous information from conversations. You must output valid JSON format.",
+        "extraction_prompt": extraction_prompt,
+        "current_timestamp": current_timestamp,
+        "user_message": user_message,
+        "next_step": f"1. Process the extraction_prompt using your capabilities\n2. Generate the JSON array of memory entries\n3. If entries found, call: add_memory_direct(agent_id='{agent_id}', memories=[...your JSON array...])\n4. If empty array [], no action needed"
+    }, indent=2)
 
 
 @mcp.tool()
