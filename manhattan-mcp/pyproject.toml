@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "manhattan-mcp"
-version = "0.1.15"
+version = "0.1.18"
 description = "MCP Server for Manhattan Memory System - Give AI agents persistent memory"
 readme = "README.md"
 license = "MIT"
@@ -44,4 +44,4 @@ Documentation = "https://themanhattanproject.ai/mcp-docs"
 Repository = "https://github.com/agent-architects/manhattan-mcp"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/manhattan_mcp"]
+packages = ["src/manhattan_mcp", "gitmem"]

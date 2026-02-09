@@ -29,6 +29,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 import sys
 import os
+import platform
+from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
@@ -80,7 +82,40 @@ Usage of this memory system is ADDITIVE. It should NOT block your normal ability
 )
 
 # Initialize Local API
-api = LocalAPI(root_path="./.gitmem_data")
+
+def get_data_dir() -> Path:
+    """
+    Get the OS-specific data directory for the application.
+    """
+    # Check for environment variable override
+    env_path = os.environ.get("MANHATTAN_MEM_PATH") or os.environ.get("MANHATTAN_COLLAB_PATH")
+    if env_path:
+        return Path(env_path)
+
+    app_name = "manhattan-mcp"
+    system = platform.system()
+
+    if system == "Windows":
+        base_path = os.environ.get("LOCALAPPDATA")
+        if not base_path:
+            base_path = os.path.expanduser("~\\AppData\\Local")
+        return Path(base_path) / app_name / "data"
+    
+    elif system == "Darwin":  # macOS
+        return Path.home() / "Library" / "Application Support" / app_name / "data"
+    
+    else:  # Linux and others
+        # XDG Base Directory Specification
+        xdg_data_home = os.environ.get("XDG_DATA_HOME")
+        if xdg_data_home:
+            return Path(xdg_data_home) / app_name / "data"
+        return Path.home() / ".local" / "share" / app_name / "data"
+
+# Ensure data directory exists
+data_dir = get_data_dir()
+data_dir.mkdir(parents=True, exist_ok=True)
+
+api = LocalAPI(root_path=str(data_dir))
 DEFAULT_AGENT_ID = "default"
 
 def _normalize_agent_id(agent_id: str) -> str:
