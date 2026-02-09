@@ -179,20 +179,25 @@ class LocalAPI:
         return self.store.delete_memory(agent_id, memory_id)
     
     def list_memories(self, agent_id: str, memory_type: str = None,
-                      limit: int = 50, offset: int = 0) -> Dict:
+                      limit: int = 50, offset: int = 0,
+                      filter_topic: str = None, filter_person: str = None) -> Dict:
         """
         List memories with optional filtering.
         
         Args:
             agent_id: Agent identifier
-            memory_type: Filter by type (episodic/semantic/procedural/working)
+            memory_type: Filter by type (episodic/semantic/procedural/working) - Note: currently handled by partial filtering in context or ignored if not supported by ctx
             limit: Maximum results
             offset: Pagination offset
+            filter_topic: Filter by topic
+            filter_person: Filter by person
         
         Returns:
             Paginated memory list
         """
-        return self.ctx.list_memories(agent_id, limit, offset)
+        # Context manager list_memories signature: (agent_id, limit, offset, filter_topic, filter_person)
+        # It doesn't support memory_type directly in list yet, but let's pass what we can
+        return self.ctx.list_memories(agent_id, limit, offset, filter_topic, filter_person)
     
     def get_context_answer(self, agent_id: str, question: str) -> Dict:
         """
