@@ -45,6 +45,16 @@ except ImportError:
         print("Warning: Could not import gitmem. Check directory structure.")
         raise
 
+# Import gitmem_coding for coding context storage
+try:
+    from .gitmem_coding.coding_api import CodingAPI as CodingContextAPI
+except ImportError:
+    try:
+        from gitmem_coding.coding_api import CodingAPI as CodingContextAPI
+    except ImportError:
+        print("Warning: Could not import gitmem_coding. Coding context tools will be unavailable.")
+        CodingContextAPI = None
+
 
 # Initialize FastMCP server
 mcp = FastMCP(
@@ -110,6 +120,14 @@ data_dir.mkdir(parents=True, exist_ok=True)
 
 api = LocalAPI(root_path=str(data_dir))
 DEFAULT_AGENT_ID = "default"
+
+# Initialize Coding Context API (stores in .gitmem_coding alongside .gitmem_data)
+coding_data_dir = data_dir.parent / ".gitmem_coding"
+coding_data_dir.mkdir(parents=True, exist_ok=True)
+if CodingContextAPI is not None:
+    coding_api = CodingContextAPI(root_path=str(coding_data_dir))
+else:
+    coding_api = None
 
 def _normalize_agent_id(agent_id: str) -> str:
     """Normalize agent_id, replacing placeholder values with default."""
@@ -905,3 +923,298 @@ async def mystery_peek(
         "mystery_alert": f"Found {count} potentially relevant memories",
         "should_search": count > 0
     }, indent=2)
+
+
+# ============================================================================
+# MCP TOOLS - Coding Context Storage (Token Reduction)
+# ============================================================================
+
+if coding_api is not None:
+
+    @mcp.tool()
+    async def store_file_context(
+        agent_id: str,
+        file_path: str,
+        content: str,
+        language: str = "other",
+        session_id: str = "",
+        keywords: List[str] = None,
+        content_summary: str = ""
+    ) -> str:
+        """
+        📁 **STORE FILE CONTENT** for cross-session retrieval and token savings.
+        
+        When you read a file, store its content here so future sessions
+        can retrieve it from cache instead of re-reading, reducing tokens.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            file_path: Absolute path to the file being cached
+            content: Full file content to store
+            language: Programming language (python, javascript, etc.)
+            session_id: Current session identifier for tracking
+            keywords: Optional searchable keywords for this file
+            content_summary: Optional brief description of the file
+        
+        Returns:
+            JSON with store status, context_id, and token estimate
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.store_file(
+            agent_id=agent_id,
+            file_path=file_path,
+            content=content,
+            language=language,
+            session_id=session_id,
+            keywords=keywords,
+            content_summary=content_summary
+        )
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def retrieve_file_context(
+        agent_id: str,
+        file_path: str,
+        session_id: str = ""
+    ) -> str:
+        """
+        📂 **RETRIEVE CACHED FILE** — Get previously stored file content.
+        
+        Checks if file content is cached and still fresh (unchanged on disk).
+        Use this BEFORE reading a file to check if it's already cached.
+        
+        Returns freshness status:
+        - "fresh": Content matches current file — USE CACHED VERSION (saves tokens!)
+        - "stale": File changed since caching — should re-read
+        - "missing": Original file no longer exists
+        - "cache_miss": File not in cache
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            file_path: Path to the file to retrieve from cache
+            session_id: Current session identifier for tracking
+        
+        Returns:
+            JSON with content, freshness status, and token savings info
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.retrieve_file(
+            agent_id=agent_id,
+            file_path=file_path,
+            session_id=session_id
+        )
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def search_coding_context(
+        agent_id: str,
+        query: str,
+        top_k: int = 10
+    ) -> str:
+        """
+        🔎 **SEARCH CACHED FILES** — Find previously stored file contexts.
+        
+        Search by filename, path, language, or keywords.
+        Returns summaries without full content for efficiency.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            query: Search query (filename, language, keyword, etc.)
+            top_k: Maximum results to return
+        
+        Returns:
+            JSON with matching file summaries
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.search_files(
+            agent_id=agent_id,
+            query=query,
+            top_k=top_k
+        )
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def list_coding_contexts(
+        agent_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        language: Optional[str] = None
+    ) -> str:
+        """
+        📋 **LIST CACHED FILES** — See all files stored in coding context cache.
+        
+        Returns file summaries (without full content) sorted by last access.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            limit: Maximum items to return
+            offset: Pagination offset
+            language: Optional filter by programming language
+        
+        Returns:
+            JSON with paginated list of cached file summaries
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.list_files(
+            agent_id=agent_id,
+            limit=limit,
+            offset=offset,
+            language=language
+        )
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def delete_coding_context(
+        agent_id: str,
+        file_path: Optional[str] = None,
+        context_id: Optional[str] = None
+    ) -> str:
+        """
+        🗑️ **REMOVE CACHED FILE** — Delete a file from coding context cache.
+        
+        Remove by file path or context ID.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            file_path: Path of file to remove from cache
+            context_id: Or the context entry ID to remove
+        
+        Returns:
+            JSON with deletion status
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.delete_file(
+            agent_id=agent_id,
+            file_path=file_path,
+            context_id=context_id
+        )
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def coding_context_stats(
+        agent_id: str
+    ) -> str:
+        """
+        📊 **CODING CONTEXT STATS** — View cache statistics and token savings.
+        
+        Shows total files cached, storage size, freshness breakdown,
+        cache hit rates, and estimated token savings.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+        
+        Returns:
+            JSON with comprehensive statistics and token savings report
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.get_stats(agent_id)
+        return json.dumps(result, indent=2)
+
+
+    # ========================================================================
+    # MCP TOOLS - Coding Context Virtual File System & .gitmem Snapshots
+    # ========================================================================
+
+    @mcp.tool()
+    async def coding_list_dir(
+        agent_id: str,
+        path: str = ""
+    ) -> str:
+        """
+        📁 **BROWSE CODING CONTEXT** — Navigate the virtual file system.
+
+        Virtual structure:
+            /files/{language}/     - Cached files organized by language
+            /sessions/            - Session store/retrieve logs
+            /snapshots/           - Version-controlled .gitmem snapshots
+            /stats/               - Aggregate statistics
+
+        Args:
+            agent_id: Unique identifier for the agent
+            path: Virtual path to list (e.g., "", "files", "files/python")
+
+        Returns:
+            JSON with directory listing
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.list_dir(agent_id, path)
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def coding_read_file(
+        agent_id: str,
+        path: str
+    ) -> str:
+        """
+        📖 **READ FROM CODING VFS** — Read a file from the virtual file system.
+
+        Reads cached file content, session data, snapshots, or stats
+        from the virtual file system.
+
+        Args:
+            agent_id: Unique identifier for the agent
+            path: Virtual file path (e.g., "files/python/abc12345_server.py")
+
+        Returns:
+            JSON with file content, metadata, and type
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.read_vfs_file(agent_id, path)
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def coding_write_file(
+        agent_id: str,
+        path: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        ✏️ **WRITE TO CODING VFS** — Store content via the virtual file system.
+
+        Write to paths like "files/{language}/{filename}" to store
+        coding context through the file system interface.
+
+        Args:
+            agent_id: Unique identifier for the agent
+            path: Virtual path (e.g., "files/python/my_script.py")
+            content: File content to store
+            metadata: Optional dict with file_path, keywords, session_id, etc.
+
+        Returns:
+            JSON with created context_id
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.write_vfs_file(agent_id, path, content, metadata)
+        return json.dumps(result, indent=2)
+
+
+    @mcp.tool()
+    async def coding_commit_snapshot(
+        agent_id: str,
+        message: str = "Coding context snapshot"
+    ) -> str:
+        """
+        📸 **SNAPSHOT CODING CONTEXT** — Create a .gitmem version-controlled snapshot.
+
+        Creates an immutable commit of all current cached coding contexts
+        in the .gitmem object store. Useful for versioning context state
+        at important milestones.
+
+        Args:
+            agent_id: Unique identifier for the agent
+            message: Commit message describing this snapshot
+
+        Returns:
+            JSON with commit SHA
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.commit_snapshot(agent_id, message)
+        return json.dumps(result, indent=2)
