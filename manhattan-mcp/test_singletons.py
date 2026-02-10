@@ -5,10 +5,12 @@ import sys
 import os
 sys.path.insert(0, '.')
 
-from gitmem.embedding import get_embedding_client, RemoteEmbeddingClient
-from gitmem.vector_store import get_vector_store, LocalVectorStore
-from gitmem.hybrid_retriever import get_retriever, HybridRetriever
-from gitmem.memory_store import LocalMemoryStore
+import sys
+sys.path.insert(0, 'src')
+from manhattan_mcp.gitmem.embedding import get_embedding_client, RemoteEmbeddingClient
+from manhattan_mcp.gitmem.vector_store import get_vector_store, LocalVectorStore
+from manhattan_mcp.gitmem.hybrid_retriever import get_retriever, HybridRetriever
+from manhattan_mcp.gitmem.memory_store import LocalMemoryStore
 
 def test_embedding_singleton():
     print("\n--- Testing Embedding Client Singleton ---")

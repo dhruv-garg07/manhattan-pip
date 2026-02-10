@@ -34,23 +34,16 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-# Ensure gitmem is in the python path
-# Assuming this file is at manhattan-mcp/src/manhattan_mcp/server.py
-# regex: gitmem is at manhattan-mcp/gitmem
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+# Ensure gitmem is available
 try:
-    from gitmem.api import LocalAPI
+    from .gitmem.api import LocalAPI
 except ImportError:
-    # If standard import fails, try finding it manually (though ../../ should have worked if structure is standard)
-    # This might happen if 'src' name is different or structure varies
-    pass
+    # Handle direct execution
     try:
         from gitmem.api import LocalAPI
     except ImportError:
-        # Last resort: try adding the gitmem directory itself, though this breaks 'from gitmem'
-        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../gitmem')))
-        # If we do this, we might need to import api directly, but let's assume ../../ works
-        print("Warning: Could not import gitmem from parent. Check directory structure.")
+        print("Warning: Could not import gitmem. Check directory structure.")
+        raise
 
 
 # Initialize FastMCP server

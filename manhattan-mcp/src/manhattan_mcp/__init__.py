@@ -10,5 +10,6 @@ __author__ = "Agent Architects Studio"
 
 from manhattan_mcp.server import mcp
 from manhattan_mcp.config import get_config, Config
+from . import gitmem
 
-__all__ = ["mcp", "get_config", "Config", "__version__"]
+__all__ = ["mcp", "get_config", "Config", "gitmem", "__version__"]

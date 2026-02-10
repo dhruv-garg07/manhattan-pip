@@ -1,7 +1,7 @@
 """Quick verification of embedding."""
 import sys
-sys.path.insert(0, '.')
-from gitmem.embedding import RemoteEmbeddingClient
+sys.path.insert(0, 'src')
+from manhattan_mcp.gitmem.embedding import RemoteEmbeddingClient
 
 c = RemoteEmbeddingClient()
 e = c.embed('test sentence')

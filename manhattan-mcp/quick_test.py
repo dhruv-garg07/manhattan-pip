@@ -16,27 +16,29 @@ if Path(TEST_PATH).exists():
 # Test 1: Import modules
 print("\n[1] Testing Module Imports...")
 try:
-    from gitmem.embedding import RemoteEmbeddingClient, HAS_NUMPY
+    import sys
+    sys.path.insert(0, 'src')
+    from manhattan_mcp.gitmem.embedding import RemoteEmbeddingClient, HAS_NUMPY
     print(f"    RemoteEmbeddingClient: OK")
     print(f"    HAS_NUMPY: {HAS_NUMPY}")
 except ImportError as e:
     print(f"    RemoteEmbeddingClient: FAILED - {e}")
 
 try:
-    from gitmem.vector_store import LocalVectorStore
+    from manhattan_mcp.gitmem.vector_store import LocalVectorStore
     print(f"    LocalVectorStore: OK")
 except ImportError as e:
     print(f"    LocalVectorStore: FAILED - {e}")
 
 try:
-    from gitmem.hybrid_retriever import HybridRetriever, RetrievalConfig
+    from manhattan_mcp.gitmem.hybrid_retriever import HybridRetriever, RetrievalConfig
     print(f"    HybridRetriever: OK")
 except ImportError as e:
     print(f"    HybridRetriever: FAILED - {e}")
 
 # Test 2: Memory Store
 print("\n[2] Testing Memory Store...")
-from gitmem import LocalMemoryStore
+from manhattan_mcp.gitmem import LocalMemoryStore
 
 store = LocalMemoryStore(root_path=TEST_PATH, enable_vectors=True)
 print(f"    Created store at: {store.root_path}")

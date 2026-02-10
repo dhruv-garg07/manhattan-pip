@@ -52,7 +52,9 @@ for line in text.strip().split('\n'):
 
 # Now test with our embedding client
 print("\n=== TESTING EMBEDDING CLIENT ===")
-from gitmem.embedding import RemoteEmbeddingClient
+import sys
+sys.path.insert(0, 'src')
+from manhattan_mcp.gitmem.embedding import RemoteEmbeddingClient
 
 client = RemoteEmbeddingClient()
 print(f"API URL: {client.api_url}")
