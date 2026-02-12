@@ -30,6 +30,7 @@ from typing import List, Dict, Any, Optional
 
 from .coding_store import CodingContextStore
 from .coding_file_system import CodingFileSystem
+from .ast_skeleton import detect_language
 
 
 # Module-level singleton
@@ -58,38 +59,90 @@ class CodingAPI:
     # File Context Operations
     # =========================================================================
     
-    def store_file(
+    def store_file_from_path(
         self,
         agent_id: str,
         file_path: str,
-        content: str,
-        language: str = "other",
+        language: str = "auto",
+        session_id: str = "",
+        keywords: List[str] = None,
+        content_summary: str = "",
+        storage_mode: str = "skeleton"
+    ) -> Dict[str, Any]:
+        """
+        Store file content by reading from disk — no content parameter needed.
+        
+        Reads the file server-side, auto-detects language, generates AST
+        skeleton, and stores. This avoids sending full file content through
+        the LLM context window.
+        
+        Args:
+            agent_id: Agent identifier
+            file_path: Absolute path to the file on disk
+            language: Programming language (or 'auto' to detect)
+            session_id: Current session ID
+            keywords: Optional searchable keywords
+            content_summary: Optional brief description
+            storage_mode: 'skeleton' (default) or 'full'
+        
+        Returns:
+            Dict with status, context_id, compression stats
+        """
+        result = self.store.store_file_context_from_path(
+            agent_id=agent_id,
+            file_path=file_path,
+            language=language,
+            session_id=session_id,
+            keywords=keywords,
+            content_summary=content_summary,
+            storage_mode=storage_mode
+        )
+        
+        # Track session activity
+        if session_id:
+            self.store.record_session_activity(
+                agent_id=agent_id,
+                session_id=session_id,
+                action="store",
+                file_path=file_path,
+                tokens=result.get("token_estimate", 0)
+            )
+        
+        return result
+    
+    def store_file_from_ast(
+        self,
+        agent_id: str,
+        file_path: str,
+        context_ast: str,
+        language: str = "auto",
         session_id: str = "",
         keywords: List[str] = None,
         content_summary: str = ""
     ) -> Dict[str, Any]:
         """
-        Store file content in the coding context cache.
+        Store file using a pre-computed AST skeleton provided by the LLM/agent.
         
-        If the file is already cached, updates it. Uses hash-based
-        deduplication to detect if content actually changed.
+        The agent provides the AST skeleton directly. The file is still read
+        from disk for hash computation (freshness detection) and metadata,
+        but the skeleton is NOT regenerated — the agent's version is used.
         
         Args:
             agent_id: Agent identifier
-            file_path: Absolute path to the file
-            content: Full file content
-            language: Programming language (python, javascript, etc.)
-            session_id: Current session ID (for tracking)
+            file_path: Absolute path to the file on disk
+            context_ast: The AST skeleton string from the LLM/coding agent
+            language: Programming language (or 'auto' to detect)
+            session_id: Current session ID
             keywords: Optional searchable keywords
             content_summary: Optional brief description
         
         Returns:
-            Dict with status, context_id, token_estimate
+            Dict with status, context_id, token stats
         """
-        result = self.store.store_file_context(
+        result = self.store.store_file_context_from_ast(
             agent_id=agent_id,
             file_path=file_path,
-            content=content,
+            context_ast=context_ast,
             language=language,
             session_id=session_id,
             keywords=keywords,
@@ -125,6 +178,7 @@ class CodingAPI:
         
         Args:
             agent_id: Agent identifier
+            file_path: Path to the file
             file_path: Path to the file
             session_id: Current session ID (for tracking)
         

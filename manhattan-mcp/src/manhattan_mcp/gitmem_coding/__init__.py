@@ -48,6 +48,12 @@ from .coding_store import CodingContextStore
 # Virtual file system
 from .coding_file_system import CodingFileSystem, CodingFileNode
 
+# AST Skeleton Generator
+from .ast_skeleton import (
+    ASTSkeletonGenerator,
+    detect_language
+)
+
 # High-level API
 from .coding_api import (
     CodingAPI,

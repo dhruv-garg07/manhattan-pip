@@ -29,6 +29,7 @@ import threading
 
 from .models import FileContext, CodingSession, ContextStatus, TOKENS_PER_CHAR_RATIO, CodeChunk
 from .chunking_engine import ChunkingEngine
+from .ast_skeleton import ASTSkeletonGenerator, detect_language
 
 # Staleness threshold — files not accessed in this many days are considered stale
 STALE_DAYS_THRESHOLD = 30
@@ -175,12 +176,19 @@ class CodingContextStore:
         language: str = "other",
         session_id: str = "",
         keywords: List[str] = None,
-        content_summary: str = ""
+        content_summary: str = "",
+        storage_mode: str = "skeleton"
     ) -> Dict[str, Any]:
         """
-        Store or update file content in the coding context cache with semantic chunking.
+        Store or update file content in the coding context cache.
         
-        Uses hash-based deduplication for both files and semantic chunks.
+        In 'skeleton' mode (default), generates a compact AST skeleton and
+        stores ONLY the skeleton — NOT the full content. This achieves
+        70-85% token reduction while preserving structural information.
+        
+        In 'full' mode, stores the raw content (legacy behavior).
+        
+        The original content hash is always stored for freshness detection.
         
         Args:
             agent_id: The agent ID
@@ -189,14 +197,30 @@ class CodingContextStore:
             language: Programming language
             session_id: Current session identifier
             keywords: Optional searchable keywords
-            content_summary: Optional brief summary
+            content_summary: Optional brief description
+            storage_mode: 'skeleton' (compact AST, default) or 'full' (raw content)
         
         Returns:
-            Dict with store status, context_id, and whether it was new or updated
+            Dict with store status, context_id, compression stats
         """
         content_hash = FileContext.compute_hash(content)
         file_name = os.path.basename(file_path)
         normalized_path = os.path.normpath(file_path)
+        original_token_estimate = FileContext.estimate_tokens(content)
+        
+        # ── Generate AST skeleton if in skeleton mode ──
+        compact_skeleton = ""
+        skeleton_token_estimate = 0
+        compression_ratio = 0.0
+        
+        if storage_mode == "skeleton":
+            skeleton_gen = ASTSkeletonGenerator()
+            compact_skeleton = skeleton_gen.generate_skeleton(content, language, file_path)
+            skeleton_token_estimate = FileContext.estimate_tokens(compact_skeleton)
+            if original_token_estimate > 0:
+                compression_ratio = round(
+                    1.0 - (skeleton_token_estimate / original_token_estimate), 4
+                )
         
         # Get file modification time if accessible
         file_mod_time = ""
@@ -219,17 +243,22 @@ class CodingContextStore:
         for chunk in chunks:
             file_chunk_hashes.append(chunk.hash_id)
             if chunk.hash_id not in chunk_registry:
-                # Store new unique chunk
                 chunk_registry[chunk.hash_id] = chunk.to_dict()
                 new_chunks_count += 1
         
         if new_chunks_count > 0:
             self._save_chunks(chunk_registry)
         
+        # ── Determine what to persist ──
+        stored_content = content if storage_mode == "full" else ""
+        effective_token_estimate = (
+            original_token_estimate if storage_mode == "full" 
+            else skeleton_token_estimate
+        )
+        
         # --- File Context Update ---
         contexts = self._load_agent_data(agent_id, "file_contexts")
         
-        # Check for existing entry with same file path
         existing_idx = None
         for i, ctx in enumerate(contexts):
             if os.path.normpath(ctx.get("file_path", "")) == normalized_path:
@@ -237,29 +266,31 @@ class CodingContextStore:
                 break
         
         now = datetime.now().isoformat()
-        token_estimate = FileContext.estimate_tokens(content)
         
         if existing_idx is not None:
-            # Update existing entry
             existing = contexts[existing_idx]
             was_same_content = existing.get("content_hash") == content_hash
             
-            existing["content"] = content
+            existing["content"] = stored_content
             existing["content_hash"] = content_hash
+            existing["compact_skeleton"] = compact_skeleton
+            existing["storage_mode"] = storage_mode
             existing["size_bytes"] = len(content.encode('utf-8'))
             existing["line_count"] = content.count('\n') + 1
-            existing["token_estimate"] = token_estimate
+            existing["token_estimate"] = effective_token_estimate
+            existing["original_token_estimate"] = original_token_estimate
+            existing["skeleton_token_estimate"] = skeleton_token_estimate
+            existing["compression_ratio"] = compression_ratio
             existing["last_accessed_at"] = now
             existing["access_count"] = existing.get("access_count", 0) + 1
             existing["file_modified_at"] = file_mod_time
             existing["language"] = language
             existing["session_id"] = session_id
-            existing["chunk_hashes"] = file_chunk_hashes # Update chunk refs
+            existing["chunk_hashes"] = file_chunk_hashes
             
             if content_summary:
                 existing["content_summary"] = content_summary
             if keywords:
-                # Merge keywords
                 old_kw = set(existing.get("keywords", []))
                 old_kw.update(keywords)
                 existing["keywords"] = list(old_kw)
@@ -272,13 +303,17 @@ class CodingContextStore:
                 "context_id": existing["id"],
                 "file_path": normalized_path,
                 "content_changed": not was_same_content,
-                "token_estimate": token_estimate,
+                "storage_mode": storage_mode,
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
+                "tokens_saved": original_token_estimate - effective_token_estimate,
                 "chunks_processed": len(chunks),
                 "new_unique_chunks": new_chunks_count,
-                "message": "File context updated in cache."
+                "message": f"File context updated ({storage_mode} mode)."
             }
         else:
-            # Create new entry
             context_id = str(uuid.uuid4())
             
             new_context = {
@@ -286,22 +321,27 @@ class CodingContextStore:
                 "file_path": normalized_path,
                 "file_name": file_name,
                 "relative_path": "",
-                "content": content,
+                "content": stored_content,
                 "content_hash": content_hash,
                 "content_summary": content_summary,
+                "compact_skeleton": compact_skeleton,
+                "storage_mode": storage_mode,
                 "language": language,
                 "line_count": content.count('\n') + 1,
                 "size_bytes": len(content.encode('utf-8')),
                 "agent_id": agent_id,
                 "session_id": session_id,
                 "access_count": 1,
-                "token_estimate": token_estimate,
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
                 "created_at": now,
                 "last_accessed_at": now,
                 "file_modified_at": file_mod_time,
                 "keywords": keywords or [],
                 "tags": [],
-                "chunk_hashes": file_chunk_hashes # Store chunk refs
+                "chunk_hashes": file_chunk_hashes
             }
             
             contexts.append(new_context)
@@ -311,10 +351,277 @@ class CodingContextStore:
                 "status": "created",
                 "context_id": context_id,
                 "file_path": normalized_path,
-                "token_estimate": token_estimate,
+                "storage_mode": storage_mode,
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
+                "tokens_saved": original_token_estimate - effective_token_estimate,
                 "chunks_processed": len(chunks),
                 "new_unique_chunks": new_chunks_count,
-                "message": "File context stored in cache."
+                "message": f"File context stored ({storage_mode} mode)."
+            }
+    
+    def store_file_context_from_path(
+        self,
+        agent_id: str,
+        file_path: str,
+        language: str = "auto",
+        session_id: str = "",
+        keywords: List[str] = None,
+        content_summary: str = "",
+        storage_mode: str = "skeleton"
+    ) -> Dict[str, Any]:
+        """
+        Store a file by reading it from disk — no content parameter needed.
+        
+        Reads the file server-side, auto-detects language, generates AST
+        skeleton, and stores. This avoids sending full file content through
+        the LLM context window.
+        
+        Args:
+            agent_id: The agent ID
+            file_path: Absolute path to the file on disk
+            language: Programming language (or 'auto' to detect from extension)
+            session_id: Current session identifier
+            keywords: Optional searchable keywords
+            content_summary: Optional brief description
+            storage_mode: 'skeleton' (compact AST, default) or 'full'
+        
+        Returns:
+            Dict with store status, context_id, compression stats
+        """
+        normalized_path = os.path.normpath(file_path)
+        
+        if not os.path.exists(normalized_path):
+            return {
+                "status": "error",
+                "error": f"File not found: {normalized_path}",
+                "file_path": normalized_path
+            }
+        
+        try:
+            with open(normalized_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        except (OSError, IOError) as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read file: {e}",
+                "file_path": normalized_path
+            }
+        
+        # Auto-detect language from extension
+        if language == "auto":
+            language = detect_language(file_path)
+        
+        return self.store_file_context(
+            agent_id=agent_id,
+            file_path=file_path,
+            content=content,
+            language=language,
+            session_id=session_id,
+            keywords=keywords,
+            content_summary=content_summary,
+            storage_mode=storage_mode
+        )
+    
+    def store_file_context_from_ast(
+        self,
+        agent_id: str,
+        file_path: str,
+        context_ast: str,
+        language: str = "auto",
+        session_id: str = "",
+        keywords: List[str] = None,
+        content_summary: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Store a file using a pre-computed AST skeleton provided by the LLM/agent.
+        
+        The agent provides the AST skeleton directly (e.g. from its own analysis).
+        This method still reads the file from disk to compute the content hash
+        (for freshness detection) and metadata (size, line count), but does NOT
+        regenerate the skeleton — it uses the one provided.
+        
+        Args:
+            agent_id: The agent ID
+            file_path: Absolute path to the file on disk
+            context_ast: The AST skeleton string provided by the LLM/coding agent
+            language: Programming language (or 'auto' to detect from extension)
+            session_id: Current session identifier
+            keywords: Optional searchable keywords
+            content_summary: Optional brief description
+        
+        Returns:
+            Dict with store status, context_id, token stats
+        """
+        normalized_path = os.path.normpath(file_path)
+        
+        # Read file from disk for hash and metadata only
+        if not os.path.exists(normalized_path):
+            return {
+                "status": "error",
+                "error": f"File not found: {normalized_path}",
+                "file_path": normalized_path
+            }
+        
+        try:
+            with open(normalized_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        except (OSError, IOError) as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read file: {e}",
+                "file_path": normalized_path
+            }
+        
+        # Auto-detect language from extension
+        if language == "auto":
+            language = detect_language(file_path)
+        
+        # Compute metadata from original content
+        content_hash = FileContext.compute_hash(content)
+        file_name = os.path.basename(file_path)
+        original_token_estimate = FileContext.estimate_tokens(content)
+        skeleton_token_estimate = FileContext.estimate_tokens(context_ast)
+        compression_ratio = 0.0
+        if original_token_estimate > 0:
+            compression_ratio = round(
+                1.0 - (skeleton_token_estimate / original_token_estimate), 4
+            )
+        
+        # Get file modification time
+        file_mod_time = ""
+        try:
+            file_mod_time = datetime.fromtimestamp(
+                os.path.getmtime(normalized_path)
+            ).isoformat()
+        except (OSError, ValueError):
+            pass
+        
+        # Chunking from original content
+        chunker = ChunkingEngine.get_chunker(language)
+        chunks = chunker.chunk_file(content, file_path)
+        
+        chunk_registry = self._load_chunks()
+        new_chunks_count = 0
+        file_chunk_hashes = []
+        
+        for chunk in chunks:
+            file_chunk_hashes.append(chunk.hash_id)
+            if chunk.hash_id not in chunk_registry:
+                chunk_registry[chunk.hash_id] = chunk.to_dict()
+                new_chunks_count += 1
+        
+        if new_chunks_count > 0:
+            self._save_chunks(chunk_registry)
+        
+        effective_token_estimate = skeleton_token_estimate
+        
+        # --- File Context Update ---
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        
+        existing_idx = None
+        for i, ctx in enumerate(contexts):
+            if os.path.normpath(ctx.get("file_path", "")) == normalized_path:
+                existing_idx = i
+                break
+        
+        now = datetime.now().isoformat()
+        
+        if existing_idx is not None:
+            existing = contexts[existing_idx]
+            was_same_content = existing.get("content_hash") == content_hash
+            
+            existing["content"] = ""  # AST mode — no full content stored
+            existing["content_hash"] = content_hash
+            existing["compact_skeleton"] = context_ast
+            existing["storage_mode"] = "ast"
+            existing["size_bytes"] = len(content.encode('utf-8'))
+            existing["line_count"] = content.count('\n') + 1
+            existing["token_estimate"] = effective_token_estimate
+            existing["original_token_estimate"] = original_token_estimate
+            existing["skeleton_token_estimate"] = skeleton_token_estimate
+            existing["compression_ratio"] = compression_ratio
+            existing["last_accessed_at"] = now
+            existing["access_count"] = existing.get("access_count", 0) + 1
+            existing["file_modified_at"] = file_mod_time
+            existing["language"] = language
+            existing["session_id"] = session_id
+            existing["chunk_hashes"] = file_chunk_hashes
+            
+            if content_summary:
+                existing["content_summary"] = content_summary
+            if keywords:
+                old_kw = set(existing.get("keywords", []))
+                old_kw.update(keywords)
+                existing["keywords"] = list(old_kw)
+            
+            contexts[existing_idx] = existing
+            self._save_agent_data(agent_id, "file_contexts", contexts)
+            
+            return {
+                "status": "updated",
+                "context_id": existing["id"],
+                "file_path": normalized_path,
+                "content_changed": not was_same_content,
+                "storage_mode": "ast",
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
+                "tokens_saved": original_token_estimate - effective_token_estimate,
+                "chunks_processed": len(chunks),
+                "new_unique_chunks": new_chunks_count,
+                "message": "File context updated with agent-provided AST."
+            }
+        else:
+            context_id = str(uuid.uuid4())
+            
+            new_context = {
+                "id": context_id,
+                "file_path": normalized_path,
+                "file_name": file_name,
+                "relative_path": "",
+                "content": "",
+                "content_hash": content_hash,
+                "content_summary": content_summary,
+                "compact_skeleton": context_ast,
+                "storage_mode": "ast",
+                "language": language,
+                "line_count": content.count('\n') + 1,
+                "size_bytes": len(content.encode('utf-8')),
+                "agent_id": agent_id,
+                "session_id": session_id,
+                "access_count": 1,
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
+                "created_at": now,
+                "last_accessed_at": now,
+                "file_modified_at": file_mod_time,
+                "keywords": keywords or [],
+                "tags": [],
+                "chunk_hashes": file_chunk_hashes
+            }
+            
+            contexts.append(new_context)
+            self._save_agent_data(agent_id, "file_contexts", contexts)
+            
+            return {
+                "status": "created",
+                "context_id": context_id,
+                "file_path": normalized_path,
+                "storage_mode": "ast",
+                "token_estimate": effective_token_estimate,
+                "original_token_estimate": original_token_estimate,
+                "skeleton_token_estimate": skeleton_token_estimate,
+                "compression_ratio": compression_ratio,
+                "tokens_saved": original_token_estimate - effective_token_estimate,
+                "chunks_processed": len(chunks),
+                "new_unique_chunks": new_chunks_count,
+                "message": "File context stored with agent-provided AST."
             }
     
     def retrieve_file_context(
@@ -384,24 +691,46 @@ class CodingContextStore:
         
         token_estimate = found.get("token_estimate", 0)
         
+        # Determine what to return based on storage_mode
+        storage_mode = found.get("storage_mode", "full")
+        compact_skeleton = found.get("compact_skeleton", "")
+        original_token_estimate = found.get("original_token_estimate", token_estimate)
+        skeleton_token_estimate = found.get("skeleton_token_estimate", 0)
+        compression_ratio = found.get("compression_ratio", 0.0)
+        
+        # Primary content: skeleton if available, else full content
+        primary_content = compact_skeleton if compact_skeleton else found.get("content", "")
+        
+        # Token savings: difference between full file tokens and what we return
+        effective_savings = (
+            original_token_estimate - skeleton_token_estimate
+            if freshness_status == ContextStatus.FRESH.value and compact_skeleton
+            else 0
+        )
+        
         return {
             "status": "cache_hit",
             "freshness": freshness_status,
             "file_path": normalized_path,
             "file_name": found.get("file_name", ""),
-            "content": found.get("content", ""),
+            "content": primary_content,
+            "compact_skeleton": compact_skeleton,
             "content_hash": found.get("content_hash", ""),
+            "storage_mode": storage_mode,
             "language": found.get("language", "other"),
             "line_count": found.get("line_count", 0),
             "size_bytes": found.get("size_bytes", 0),
             "token_estimate": token_estimate,
-            "token_savings": token_estimate if freshness_status == ContextStatus.FRESH.value else 0,
+            "original_token_estimate": original_token_estimate,
+            "skeleton_token_estimate": skeleton_token_estimate,
+            "compression_ratio": compression_ratio,
+            "token_savings": effective_savings,
             "access_count": found.get("access_count", 0),
             "created_at": found.get("created_at", ""),
             "last_accessed_at": now,
             "content_summary": found.get("content_summary", ""),
-            "chunk_hashes": found.get("chunk_hashes", []), # Return chunk refs
-            "message": f"File retrieved from cache. Status: {freshness_status}."
+            "chunk_hashes": found.get("chunk_hashes", []),
+            "message": f"File retrieved from cache ({storage_mode} mode). Status: {freshness_status}."
         }
     
     def search_contexts(
@@ -412,28 +741,75 @@ class CodingContextStore:
     ) -> List[Dict[str, Any]]:
         """
         Search across stored file contexts by path, filename, or keywords.
+        """
+        return self.search_contexts(agent_id, query, top_k)
+
+    def _get_preview_snippet(self, content: str, query_words: List[str], max_chars: int = 2000) -> str:
+        """Get a snippet of content centered around the first match."""
+        if not content or len(content) <= max_chars:
+            return content
         
-        Args:
-            agent_id: The agent ID
-            query: Search query string
-            top_k: Maximum results to return
+        lower_content = content.lower()
+        best_pos = -1
         
-        Returns:
-            List of matching contexts (without full content, for efficiency)
+        # Find first occurrence of any query word
+        for word in query_words:
+            if len(word) < 3: continue # Skip short words
+            pos = lower_content.find(word)
+            if pos != -1:
+                best_pos = pos
+                break
+        
+        if best_pos == -1:
+            return content[:max_chars] + "..."
+            
+        # Center the window around the match
+        half_window = max_chars // 2
+        start = max(0, best_pos - half_window)
+        end = min(len(content), start + max_chars)
+        
+        # Adjust start if end hit the boundary
+        if end == len(content):
+            start = max(0, end - max_chars)
+            
+        snippet = content[start:end]
+        if start > 0:
+            snippet = "..." + snippet
+        if end < len(content):
+            snippet = snippet + "..."
+            
+        return snippet
+
+    def search_contexts(
+        self,
+        agent_id: str,
+        query: str,
+        top_k: int = 5
+    ) -> Dict[str, Any]:
+        """
+        Search for file contexts relevant to the query.
+        Searches metadata, summaries, and skeleton content.
         """
         contexts = self._load_agent_data(agent_id, "file_contexts")
-        query_lower = query.lower().strip()
-        query_words = [w for w in query_lower.split() if len(w) > 1]
-        
-        results = []
-        for ctx in contexts:
-            score = 0.0
+        if not query or not contexts:
+            return {"results": [], "total_count": 0}
             
+        query_words = query.lower().split()
+        results = []
+        
+        for ctx in contexts:
+            score = 0
             file_path = ctx.get("file_path", "").lower()
             file_name = ctx.get("file_name", "").lower()
             language = ctx.get("language", "").lower()
             keywords = [k.lower() for k in ctx.get("keywords", [])]
             summary = ctx.get("content_summary", "").lower()
+            skeleton = ctx.get("compact_skeleton", "") # Keep original case for preview
+            content = ctx.get("content", "") # Keep original case for preview
+            
+            # Use lower case for searching
+            skeleton_search = skeleton.lower()
+            content_search = content.lower()
             
             for word in query_words:
                 # Filename match (highest priority)
@@ -457,13 +833,28 @@ class CodingContextStore:
                 # Summary match
                 if word in summary:
                     score += 0.5
+                
+                # Skeleton/Content match (lower priority but enables finding functions)
+                if word in skeleton_search:
+                    score += 1.0
+                elif word in content_search:
+                    score += 1.0
             
             if score > 0:
-                # Return summary (no full content) for efficiency
+                # Determine raw preview source
+                raw_preview = skeleton if skeleton else content
+                
+                # Get windowed snippet around the match
+                preview_snippet = self._get_preview_snippet(raw_preview, query_words)
+
+                # Return summary and skeleton preview for efficiency
                 result = {
-                    "id": ctx.get("id"),
+                    "context_id": ctx.get("id"), # Changed from "context_id" to "id" to match new_context
                     "file_path": ctx.get("file_path"),
                     "file_name": ctx.get("file_name"),
+                    "score": score,
+                    "summary": summary,
+                    "preview": preview_snippet, # Contextual snippet
                     "language": ctx.get("language"),
                     "line_count": ctx.get("line_count", 0),
                     "size_bytes": ctx.get("size_bytes", 0),

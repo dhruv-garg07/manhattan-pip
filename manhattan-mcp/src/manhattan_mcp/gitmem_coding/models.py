@@ -69,9 +69,13 @@ class FileContext:
     relative_path: str = ""         # Relative path (workspace-relative)
     
     # Content
-    content: str = ""               # Full file content
-    content_hash: str = ""          # SHA-256 of content for freshness checks
+    content: str = ""               # Full file content (empty when storage_mode='skeleton')
+    content_hash: str = ""          # SHA-256 of ORIGINAL content for freshness checks
     content_summary: str = ""       # Optional brief summary of the file
+    compact_skeleton: str = ""      # AST-generated skeleton (signatures, docstrings, structure)
+    
+    # Storage mode
+    storage_mode: str = "skeleton"  # 'skeleton' (compact AST) or 'full' (raw content)
     
     # File metadata
     language: str = FileLanguage.OTHER.value
@@ -84,7 +88,10 @@ class FileContext:
     
     # Usage tracking
     access_count: int = 1           # Number of times retrieved from cache
-    token_estimate: int = 0         # Estimated tokens this content represents
+    token_estimate: int = 0         # Estimated tokens for stored representation
+    original_token_estimate: int = 0  # Tokens the full file would have consumed
+    skeleton_token_estimate: int = 0  # Tokens the skeleton consumes
+    compression_ratio: float = 0.0  # 1 - (skeleton_tokens / original_tokens)
     
     # Timestamps
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -125,13 +132,31 @@ class FileContext:
         """Estimate token count for content (approximate)."""
         return int(len(content) * TOKENS_PER_CHAR_RATIO)
     
-    def refresh_metadata(self):
-        """Recalculate derived metadata from content."""
-        if self.content:
-            self.content_hash = self.compute_hash(self.content)
-            self.size_bytes = len(self.content.encode('utf-8'))
-            self.line_count = self.content.count('\n') + 1
+    def refresh_metadata(self, original_content: str = ""):
+        """Recalculate derived metadata from content.
+        
+        Args:
+            original_content: The full source content (used only to compute
+                hash and original token estimate when in skeleton mode).
+        """
+        # Use original content for hash/size if provided, else stored content
+        source = original_content or self.content
+        if source:
+            self.content_hash = self.compute_hash(source)
+            self.size_bytes = len(source.encode('utf-8'))
+            self.line_count = source.count('\n') + 1
+            self.original_token_estimate = self.estimate_tokens(source)
+        
+        if self.compact_skeleton:
+            self.skeleton_token_estimate = self.estimate_tokens(self.compact_skeleton)
+            self.token_estimate = self.skeleton_token_estimate
+            if self.original_token_estimate > 0:
+                self.compression_ratio = round(
+                    1.0 - (self.skeleton_token_estimate / self.original_token_estimate), 4
+                )
+        elif self.content:
             self.token_estimate = self.estimate_tokens(self.content)
+            self.original_token_estimate = self.token_estimate
 
 
 @dataclass

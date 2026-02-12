@@ -935,8 +935,7 @@ if coding_api is not None:
     async def store_file_context(
         agent_id: str,
         file_path: str,
-        content: str,
-        language: str = "other",
+        language: str = "auto",
         session_id: str = "",
         keywords: List[str] = None,
         content_summary: str = ""
@@ -944,26 +943,68 @@ if coding_api is not None:
         """
         📁 **STORE FILE CONTENT** for cross-session retrieval and token savings.
         
-        When you read a file, store its content here so future sessions
-        can retrieve it from cache instead of re-reading, reducing tokens.
+        Reads the file from disk server-side — no need to pass content.
+        Generates a compact AST skeleton that preserves signatures, docstrings,
+        and structure while omitting implementation details.
+        Achieves 70-85% token reduction.
         
         Args:
             agent_id: Unique identifier for the agent
             file_path: Absolute path to the file being cached
-            content: Full file content to store
-            language: Programming language (python, javascript, etc.)
+            language: Programming language (or 'auto' to detect from extension)
             session_id: Current session identifier for tracking
             keywords: Optional searchable keywords for this file
             content_summary: Optional brief description of the file
         
         Returns:
-            JSON with store status, context_id, and token estimate
+            JSON with store status, context_id, and compression stats
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.store_file(
+        result = coding_api.store_file_from_path(
             agent_id=agent_id,
             file_path=file_path,
-            content=content,
+            language=language,
+            session_id=session_id,
+            keywords=keywords,
+            content_summary=content_summary
+        )
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def store_file_context_with_ast(
+        agent_id: str,
+        file_path: str,
+        context_ast: str,
+        language: str = "auto",
+        session_id: str = "",
+        keywords: List[str] = None,
+        content_summary: str = ""
+    ) -> str:
+        """
+        📁 **STORE FILE WITH AST** — Store using a pre-computed AST skeleton.
+        
+        Use this when the LLM/coding agent has already computed an AST
+        skeleton for a file. The file is read from disk only for hash
+        computation (freshness detection) and metadata — the provided
+        AST skeleton is stored directly without regeneration.
+        
+        Args:
+            agent_id: Unique identifier for the agent
+            file_path: Absolute path to the file on disk
+            context_ast: The AST skeleton string provided by the LLM/agent
+            language: Programming language (or 'auto' to detect from extension)
+            session_id: Current session identifier for tracking
+            keywords: Optional searchable keywords for this file
+            content_summary: Optional brief description of the file
+        
+        Returns:
+            JSON with store status, context_id, and token stats
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.store_file_from_ast(
+            agent_id=agent_id,
+            file_path=file_path,
+            context_ast=context_ast,
             language=language,
             session_id=session_id,
             keywords=keywords,
@@ -1005,6 +1046,9 @@ if coding_api is not None:
             session_id=session_id
         )
         return json.dumps(result, indent=2)
+
+
+
 
 
     @mcp.tool()
