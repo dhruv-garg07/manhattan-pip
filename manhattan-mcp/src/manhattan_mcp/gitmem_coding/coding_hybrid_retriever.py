@@ -46,13 +46,16 @@ class CodingHybridRetriever:
         clean_query = query
         
         # Simple heuristic: look for tokens that look like file paths
+        import string
         tokens = query.split()
         for token in tokens:
-            if "/" in token or ("." in token and len(token) > 4):
-                file_filter = token
+            # Strip punctuation from the potential file path
+            clean_token = token.strip(string.punctuation)
+            if "/" in clean_token or ("." in clean_token and len(clean_token) > 4):
+                file_filter = clean_token
+                # Remove the original token from query to avoid doubling up match
                 clean_query = query.replace(token, "").strip()
                 break
-        
         
         if not clean_query:
             clean_query = "summary overview" 

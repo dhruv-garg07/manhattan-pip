@@ -214,8 +214,8 @@ class CodeChunk:
     content: str                    # The actual code text
     type: str                       # function, class, import, code, etc.
     name: str                       # Name of the entity (e.g. function name)
-    start_line: int                 # Start line in original file
-    end_line: int                   # End line in original file
+    start_line: int = 0             # Start line in original file (Optional)
+    end_line: int = 0               # End line in original file (Optional)
     
     # Metadata
     language: str = "text"

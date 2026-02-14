@@ -940,12 +940,93 @@ if coding_api is not None:
         """
         📝 Create a Code Flow structure for a file with semantic chunking.
 
-        ⚡ CRITICAL FOR AI AGENTS: You are creating the mental model of this code.
-        You MUST provide `chunks` argument with semantically meaningful units
-        (functions, classes, etc.) that you have parsed.
-        
-        DO NOT rely on automatic chunking unless absolutely necessary.
-        Pre-chunking allows you to provide better context (keywords, summaries).
+        SYSTEM ROLE:
+        You are a structured memory extraction engine. 
+        Your job is to convert dialogues into atomic factual memory records.
+
+        CONTEXT:
+        {context}
+
+        CURRENT WINDOW DIALOGUES:
+        {dialogue_text}
+
+        GENERAL RULES:
+        - Capture ALL factual information present in the dialogues
+        - Do NOT summarize — extract
+        - Do NOT infer missing facts
+        - Do NOT hallucinate time, location, people, or entities
+        - Each memory entry must stand independently
+        - Use explicit nouns — NEVER use pronouns
+        - Replace relative time expressions with absolute ISO-8601 timestamps whenever possible
+        - If absolute time cannot be derived, set timestamp = null
+        - If a field is missing, set it to null or empty list (never omit fields)
+
+        DISAMBIGUATION RULES:
+        Forbidden words inside lossless_restatement:
+        he, she, it, they, this, that, these, those, yesterday, today, tomorrow, last week, next week, earlier, later
+
+        Instead:
+        Resolve references using names and explicit timestamps from the dialogue.
+
+        FIELD DEFINITIONS:
+
+        lossless_restatement:
+        A fully self-contained factual sentence containing:
+        - subject
+        - action
+        - object
+        - time (if available)
+        - location (if available)
+
+        keywords:
+        Important nouns and concepts
+
+        timestamp:
+        ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+        Use only if explicitly derivable
+
+        location:
+        Exact place name mentioned in dialogue
+
+        persons:
+        All human names mentioned in the statement
+
+        entities:
+        Organizations, products, services, projects, or systems
+
+        topic:
+        Short description of the information category
+
+        OUTPUT FORMAT:
+        Return ONLY a valid JSON array.
+        No markdown.
+        No explanations.
+        No trailing commas.
+
+        Schema:
+
+        [
+          {{
+            "lossless_restatement": string,
+            "keywords": [string],
+            "timestamp": string | null,
+            "location": string | null,
+            "persons": [string],
+            "entities": [string],
+            "topic": string
+          }}
+        ]
+
+        QUALITY REQUIREMENTS:
+        - Multiple facts in one sentence → split into multiple entries
+        - Commitments, plans, agreements → separate entries
+        - Questions → capture as inquiry intent
+        - Decisions → capture as decision event
+        - Actions → capture as completed action
+        - Each entry must be atomic
+
+        Now extract the structured memories from the dialogues.
+        Return ONLY the JSON array.
 
         Args:
             agent_id: The agent ID
@@ -971,6 +1052,94 @@ if coding_api is not None:
     ) -> str:
         """
         Retrieve Code Flow or Search Context.
+
+        SYSTEM ROLE:
+        You are a structured memory extraction engine. 
+        Your job is to convert dialogues into atomic factual memory records.
+
+        CONTEXT:
+        {context}
+
+        CURRENT WINDOW DIALOGUES:
+        {dialogue_text}
+
+        GENERAL RULES:
+        - Capture ALL factual information present in the dialogues
+        - Do NOT summarize — extract
+        - Do NOT infer missing facts
+        - Do NOT hallucinate time, location, people, or entities
+        - Each memory entry must stand independently
+        - Use explicit nouns — NEVER use pronouns
+        - Replace relative time expressions with absolute ISO-8601 timestamps whenever possible
+        - If absolute time cannot be derived, set timestamp = null
+        - If a field is missing, set it to null or empty list (never omit fields)
+
+        DISAMBIGUATION RULES:
+        Forbidden words inside lossless_restatement:
+        he, she, it, they, this, that, these, those, yesterday, today, tomorrow, last week, next week, earlier, later
+
+        Instead:
+        Resolve references using names and explicit timestamps from the dialogue.
+
+        FIELD DEFINITIONS:
+
+        lossless_restatement:
+        A fully self-contained factual sentence containing:
+        - subject
+        - action
+        - object
+        - time (if available)
+        - location (if available)
+
+        keywords:
+        Important nouns and concepts
+
+        timestamp:
+        ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+        Use only if explicitly derivable
+
+        location:
+        Exact place name mentioned in dialogue
+
+        persons:
+        All human names mentioned in the statement
+
+        entities:
+        Organizations, products, services, projects, or systems
+
+        topic:
+        Short description of the information category
+
+        OUTPUT FORMAT:
+        Return ONLY a valid JSON array.
+        No markdown.
+        No explanations.
+        No trailing commas.
+
+        Schema:
+
+        [
+          {{
+            "lossless_restatement": string,
+            "keywords": [string],
+            "timestamp": string | null,
+            "location": string | null,
+            "persons": [string],
+            "entities": [string],
+            "topic": string
+          }}
+        ]
+
+        QUALITY REQUIREMENTS:
+        - Multiple facts in one sentence → split into multiple entries
+        - Commitments, plans, agreements → separate entries
+        - Questions → capture as inquiry intent
+        - Decisions → capture as decision event
+        - Actions → capture as completed action
+        - Each entry must be atomic
+
+        Now extract the structured memories from the dialogues.
+        Return ONLY the JSON array.
         
         Uses **CodingHybridRetriever** for search.
         
