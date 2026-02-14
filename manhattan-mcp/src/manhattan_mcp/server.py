@@ -1113,3 +1113,21 @@ if coding_api is not None:
         result = coding_api.delete_flow(agent_id, file_path)
         return json.dumps({"status": "deleted" if result else "not_found", "file_path": file_path}, indent=2)
 
+    @mcp.tool()
+    async def list_flows(
+        agent_id: str,
+        limit: int = 50,
+        offset: int = 0
+    ) -> str:
+        """
+        List all stored Code Flow structures for an agent.
+        
+        Args:
+            agent_id: The agent ID
+            limit: Maximum items to return
+            offset: Pagination offset
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.list_flows(agent_id, limit, offset)
+        return json.dumps(result, indent=2)
+

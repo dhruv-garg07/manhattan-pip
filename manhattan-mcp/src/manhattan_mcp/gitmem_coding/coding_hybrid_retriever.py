@@ -136,23 +136,34 @@ class CodingHybridRetriever:
                     except:
                         vec_score = 0.0
                 
-                # 2. Keyword Score
+                # 2. Keyword Score (Enhanced)
                 kw_score = 0.0
                 chunk_kws = {kw.lower() for kw in chunk.get("keywords", [])}
                 chunk_name = chunk.get("name", "").lower()
+                chunk_summary = chunk.get("summary", "").lower()
                 
                 if query_keywords:
+                    # A. Keyword overlap
                     overlap = query_keywords.intersection(chunk_kws)
+                    base_kw = len(overlap) / len(query_keywords) if query_keywords else 0.0
                     
-                    # Exact name match boost
-                    name_match = 0.0
-                    if any(kw in chunk_name for kw in query_keywords):
-                        name_match = 0.5 # Substantial boost for name match
+                    # B. Name Match Boost
+                    name_match_boost = 0.0
+                    for qkw in query_keywords:
+                        if qkw == chunk_name:
+                            name_match_boost = 0.8  # Exact name match is extremely strong
+                            break
+                        elif qkw in chunk_name:
+                            name_match_boost = max(name_match_boost, 0.4) # Partial name match
                     
-                    if overlap or name_match:
-                        # Base keyword score
-                        base_kw = len(overlap) / len(query_keywords) if query_keywords else 0.0
-                        kw_score = min(1.0, base_kw + name_match)
+                    # C. Summary Match Boost
+                    summary_match_boost = 0.0
+                    summary_overlap = sum(1 for qkw in query_keywords if qkw in chunk_summary)
+                    if summary_overlap > 0:
+                        summary_match_boost = (summary_overlap / len(query_keywords)) * 0.3 # Max 0.3 boost from summary
+                    
+                    # Combine Keyword Scores
+                    kw_score = min(1.0, base_kw + name_match_boost + summary_match_boost)
                 
                 # 3. Hybrid Combination
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
