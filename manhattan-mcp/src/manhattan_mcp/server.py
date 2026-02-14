@@ -938,103 +938,62 @@ if coding_api is not None:
         chunks: List[Dict[str, Any]] = None
     ) -> str:
         """
-        📝 Create a Code Flow structure for a file with semantic chunking.
+        📝 Create a Code Flow structure for a file.
+        
+        Optimized for semantic code extraction (~50% compression target).
+        Extracts atomic code units (functions, classes, logic blocks) from dialogues and code context.
 
-        SYSTEM ROLE:
-        You are a structured memory extraction engine. 
-        Your job is to convert dialogues and code context into atomic factual memory records.
-
-        INPUT CONTEXT:
-        The "context" provided here is a **LOSSLESS RESTATEMENT** of the code. 
-        It summarizes the logic, structure, and intent without including the full verbose code.
-        Treat this summary as the ground truth for the code's current state.
-
-        CONTEXT (Code Summary):
-        {context}
-
-        CURRENT WINDOW DIALOGUES:
-        {dialogue_text}
-
-        GENERAL RULES:
-        - Capture ALL factual information present in the dialogues
-        - Do NOT summarize — extract
-        - Do NOT infer missing facts
-        - Do NOT hallucinate time, location, people, or entities
-        - Each memory entry must stand independently
-        - Use explicit nouns — NEVER use pronouns
-        - Replace relative time expressions with absolute ISO-8601 timestamps whenever possible
-        - If absolute time cannot be derived, set timestamp = null
-        - If a field is missing, set it to null or empty list (never omit fields)
-
-        DISAMBIGUATION RULES:
-        Forbidden words inside lossless_restatement:
-        he, she, it, they, this, that, these, those, yesterday, today, tomorrow, last week, next week, earlier, later
-
-        Instead:
-        Resolve references using names and explicit timestamps from the dialogue.
+        INPUT:
+        - context: A LOSSLESS RESTATEMENT of the code (Summarized logic/structure).
+        - dialogue_text: Recent conversation context for memory enrichment.
 
         FIELD DEFINITIONS:
-
-        name:
-        Name of the code entity (function name, class name, or "module_logic").
-
-        type:
-        Type of entity: "function", "class", "module", "block", "import".
-
-        content:
-        The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
-
-        summary:
-        A LOSSLESS RESTATEMENT of the logic (~50% compression target).
-        - Must be detailed enough to reconstruct the logic but concise enough to save tokens.
-        - Ensure input/output schemas and field names remain intact.
-        - subject (function/class)
-        - action (logic performed)
-        - object (inputs/outputs)
-        - constraints/side-effects
-
-        keywords:
-        Important concepts, algorithm names, dependencies, or patterns.
-
-        start_line / end_line:
-        (Optional) Line numbers if known (default 0).
+        - name: Entity name (e.g., "AuthManager", "process_data").
+        - type: "function", "class", "module", "block", "import".
+        - content: Minimal signature/stub (MUST NOT be full code if summary provided).
+        - summary: Lossless restatement of logic. Preserve input/output schemas and field names.
+        - keywords: Search-optimized concepts and dependencies.
+        - start_line / end_line: Optional line range (default 0).
 
         EXAMPLES:
         
-        Input Dialogue: "We need to fix the auth bug in login.py where the token expires too soon."
-        Output CodeChunk:
-        {
-            "name": "login.py",
-            "type": "module",
-            "content": "def login(user): ...",
-            "summary": "The authentication bug in login.py causes tokens to expire prematurely.",
-            "keywords": ["auth bug", "login.py", "token expiration"],
-            "start_line": 0,
-            "end_line": 0
+        1. Class with methods:
+        Input: "Define AuthManager class to handle login/logout."
+        Output: {
+            "name": "AuthManager", "type": "class", "content": "class AuthManager: ...",
+            "summary": "Handles session management. Login(user, pass) and Logout() logic preserved.",
+            "keywords": ["AuthManager", "session", "login"], "start_line": 1, "end_line": 50
         }
 
-        Input Code Summary: "Function process_data takes input_list and returns a sorted dictionary."
-        Output CodeChunk:
-        {
-            "name": "process_data",
-            "type": "function",
-            "content": "def process_data(input_list): ...",
-            "summary": "The process_data function sorts the input_list and returns a dictionary.",
-            "keywords": ["process_data", "sorting", "dictionary"],
-            "start_line": 10,
-            "end_line": 25
+        2. Decorated Function:
+        Input: "@app.route('/api') def get_data(): ..."
+        Output: {
+            "name": "get_data", "type": "function", "content": "@app.route('/api')\ndef get_data(): ...",
+            "summary": "API endpoint for data retrieval. Processes GET requests for resource status.",
+            "keywords": ["get_data", "api", "route"], "start_line": 10, "end_line": 20
         }
 
-        OUTPUT FORMAT:
-        Return ONLY a valid JSON array.
-        No markdown.
-        No explanations.
-        No trailing commas.
+        3. Complex Logic Block:
+        Input: "The for-loop in process.py sorts the data using a custom key."
+        Output: {
+            "name": "data_sorting_block", "type": "block", "content": "for item in data: ...",
+            "summary": "Iterates through data and applies custom sorting/ranking algorithm.",
+            "keywords": ["sorting", "processing"], "start_line": 100, "end_line": 115
+        }
+
+        4. Module-level Config:
+        Input: "Global configuration in settings.py with API keys and timeouts."
+        Output: {
+            "name": "module_logic", "type": "module", "content": "API_KEY = '...'\nTIMEOUT = 30",
+            "summary": "Defines global settings including API credentials and network timeouts.",
+            "keywords": ["config", "settings", "timeout"], "start_line": 1, "end_line": 10
+        }
+
+        OUTPUT FORMAT: Return ONLY a valid JSON array.
 
         Schema:
-
         [
-          {{
+          {
             "name": string,
             "type": string,
             "content": string,
@@ -1042,24 +1001,8 @@ if coding_api is not None:
             "keywords": [string],
             "start_line": int,
             "end_line": int
-          }}
+          }
         ]
-
-        QUALITY REQUIREMENTS:
-        - Summary must be a lossless restatement of logic
-        - Content should be minimal (signatures/stubs)
-        - Keywords should be search-optimized
-        - Each chunk must be atomic
-
-        Now extract the structured code chunks from the context.
-        Return ONLY the JSON array.
-
-        Args:
-            agent_id: The agent ID
-            file_path: Absolute path to the file on disk
-            chunks: List of semantic code chunks.
-                    If provided: Uses YOUR high-quality pre-chunked semantic units.
-                    If OMITTED: Falls back to basic local AST parsing (less accurate).
         """
         agent_id = _normalize_agent_id(agent_id)
         
@@ -1077,103 +1020,40 @@ if coding_api is not None:
         query: str
     ) -> str:
         """
-        Retrieve Code Flow or Search Context.
-
-        SYSTEM ROLE:
-        You are a structured memory extraction engine. 
-        Your job is to convert dialogues and code context into atomic factual memory records.
-
-        INPUT CONTEXT:
-        The "context" provided here is a **LOSSLESS RESTATEMENT** of the code. 
-        It summarizes the logic, structure, and intent without including the full verbose code.
-        Treat this summary as the ground truth for the code's current state.
-
-        CONTEXT (Code Summary):
-        {context}
-
-        CURRENT WINDOW DIALOGUES:
-        {dialogue_text}
-
-        GENERAL RULES:
-        - Capture ALL factual information present in the dialogues
-        - Do NOT summarize — extract
-        - Do NOT infer missing facts
-        - Do NOT hallucinate time, location, people, or entities
-        - Each memory entry must stand independently
-        - Use explicit nouns — NEVER use pronouns
-        - Replace relative time expressions with absolute ISO-8601 timestamps whenever possible
-        - If absolute time cannot be derived, set timestamp = null
-        - If a field is missing, set it to null or empty list (never omit fields)
-
-        DISAMBIGUATION RULES:
-        Forbidden words inside lossless_restatement:
-        he, she, it, they, this, that, these, those, yesterday, today, tomorrow, last week, next week, earlier, later
-
-        Instead:
-        Resolve references using names and explicit timestamps from the dialogue.
+        🔍 Search or Retrieve Code Flow Context.
+        
+        Optimized for semantic code retrieval based on hybrid query.
+        Returns atomic code units (functions, classes, blocks) matching the query.
 
         FIELD DEFINITIONS:
-
-        name:
-        Name of the code entity (function name, class name, or "module_logic").
-
-        type:
-        Type of entity: "function", "class", "module", "block", "import".
-
-        content:
-        The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
-
-        summary:
-        A LOSSLESS RESTATEMENT of the logic (~50% compression target).
-        - Must be detailed enough to reconstruct the logic but concise enough to save tokens.
-        - Ensure input/output schemas and field names remain intact.
-        - subject (function/class)
-        - action (logic performed)
-        - object (inputs/outputs)
-        - constraints/side-effects
-
-        keywords:
-        Important concepts, algorithm names, dependencies, or patterns.
-
-        start_line / end_line:
-        (Optional) Line numbers if known (default 0).
+        - name: Entity name (e.g., "AuthManager", "process_data").
+        - type: "function", "class", "module", "block", "import".
+        - content: Minimal signature/stub (MUST NOT be full code if summary provided).
+        - summary: Lossless restatement of logic (~50% compression). Preserve schemas.
+        - keywords: Search-optimized concepts and dependencies.
+        - start_line / end_line: Optional line range (default 0).
 
         EXAMPLES:
         
-        Input Dialogue: "We need to fix the auth bug in login.py where the token expires too soon."
-        Output CodeChunk:
-        {
-            "name": "login.py",
-            "type": "module",
-            "content": "def login(user): ...",
-            "summary": "The authentication bug in login.py causes tokens to expire prematurely.",
-            "keywords": ["auth bug", "login.py", "token expiration"],
-            "start_line": 0,
-            "end_line": 0
+        1. Class Query: "Find the component managing user sessions."
+        Output: {
+            "name": "SessionManager", "type": "class", "content": "class SessionManager: ...",
+            "summary": "Responsible for user login/logout lifecycles and token persistence.",
+            "keywords": ["session", "login", "token"], "start_line": 5, "end_line": 60
         }
 
-        Input Code Summary: "Function process_data takes input_list and returns a sorted dictionary."
-        Output CodeChunk:
-        {
-            "name": "process_data",
-            "type": "function",
-            "content": "def process_data(input_list): ...",
-            "summary": "The process_data function sorts the input_list and returns a dictionary.",
-            "keywords": ["process_data", "sorting", "dictionary"],
-            "start_line": 10,
-            "end_line": 25
+        2. Interaction Query: "How does the API handle data stream noise?"
+        Output: {
+            "name": "process_stream", "type": "function", "content": "def process_stream(s): ...",
+            "summary": "Consumes binary input and applies a sliding window filter for noise reduction.",
+            "keywords": ["noise reduction", "stream", "filter"], "start_line": 100, "end_line": 120
         }
 
-        OUTPUT FORMAT:
-        Return ONLY a valid JSON array.
-        No markdown.
-        No explanations.
-        No trailing commas.
+        OUTPUT FORMAT: Return ONLY a valid JSON array.
 
         Schema:
-
         [
-          {{
+          {
             "name": string,
             "type": string,
             "content": string,
@@ -1181,24 +1061,8 @@ if coding_api is not None:
             "keywords": [string],
             "start_line": int,
             "end_line": int
-          }}
+          }
         ]
-
-        QUALITY REQUIREMENTS:
-        - Summary must be a lossless restatement of logic
-        - Content should be minimal (signatures/stubs)
-        - Keywords should be search-optimized
-        - Each chunk must be atomic
-
-        Now extract the structured code chunks from the context.
-        Return ONLY the JSON array.
-        
-        Uses **CodingHybridRetriever** for search.
-        
-        Args:
-            agent_id: The agent ID
-            query: Search query. Example: "authentication logic" or "user session management".
-                   Performs Hybrid Search (Vector + Keyword) on chunks.
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.get_flow(agent_id, query)

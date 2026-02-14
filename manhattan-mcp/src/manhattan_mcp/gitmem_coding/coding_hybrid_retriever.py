@@ -8,6 +8,7 @@ reading inline vector fields from chunks.
 from typing import List, Dict, Any, Optional
 import os
 import json
+import string
 from ..gitmem.embedding import RemoteEmbeddingClient
 from .coding_store import CodingContextStore
 from .coding_vector_store import CodingVectorStore
@@ -100,14 +101,14 @@ class CodingHybridRetriever:
         except Exception as e:
             logger.warning(f"Embedding generation failed for query '{query}': {e}")
             
-        # Keyword tokens (simple split)
-        query_keywords = set(query.lower().split())
+        # Keyword tokens (simple split, removing small noise words)
+        STOP_WORDS = {"is", "the", "a", "an", "and", "or", "in", "on", "with", "how", "what", "where", "to", "for", "of"}
+        query_keywords = {w.lower().strip(string.punctuation) for w in query.split() if w.lower().strip(string.punctuation) not in STOP_WORDS}
 
         scored_chunks = []
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
-
         
-        # Pre-load all vectors for this agent (single file read)
+        # ... (vector loading same)
         all_vectors = self.vector_store._load_vectors(agent_id)
         if all_vectors is None:
             all_vectors = {}
@@ -115,42 +116,43 @@ class CodingHybridRetriever:
         for ctx in contexts:
             file_path = ctx.get("file_path", "")
             
-            # Metadata Filtering (User Requirement: Strict usage)
+            # Metadata Filtering
             if file_filter:
-                # Normalize filter for OS-agnostic matching
                 normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep)
-                
-                # Case-insensitive match for robustness (especially on Windows)
                 if normalized_filter.lower() not in file_path.lower():
                     continue
 
             chunks = ctx.get("chunks", [])
-            
             for chunk in chunks:
                 # 1. Vector Score (Cosine Similarity)
                 vec_score = 0.0
-                # Look up vector from vectors.json using hash_id or embedding_id
                 hash_id = chunk.get("hash_id") or chunk.get("embedding_id")
                 chunk_vec = all_vectors.get(hash_id) if hash_id else None
                 
                 if (query_vector is not None and len(query_vector) > 0 
                         and chunk_vec and len(chunk_vec) > 0):
-                    # Dot product (assuming normalized vectors)
                     try:
                         vec_score = sum(a*b for a, b in zip(query_vector, chunk_vec))
                     except:
                         vec_score = 0.0
                 
-                # 2. Keyword Score (Jaccard-ish)
+                # 2. Keyword Score
                 kw_score = 0.0
-                chunk_kws = set(chunk.get("keywords", []))
-                if chunk.get("name"):
-                    chunk_kws.add(chunk.get("name").lower())
+                chunk_kws = {kw.lower() for kw in chunk.get("keywords", [])}
+                chunk_name = chunk.get("name", "").lower()
+                
+                if query_keywords:
+                    overlap = query_keywords.intersection(chunk_kws)
                     
-                if chunk_kws and query_keywords:
-                    overlap = len(query_keywords.intersection(chunk_kws))
-                    if overlap > 0:
-                        kw_score = overlap / len(query_keywords) 
+                    # Exact name match boost
+                    name_match = 0.0
+                    if any(kw in chunk_name for kw in query_keywords):
+                        name_match = 0.5 # Substantial boost for name match
+                    
+                    if overlap or name_match:
+                        # Base keyword score
+                        base_kw = len(overlap) / len(query_keywords) if query_keywords else 0.0
+                        kw_score = min(1.0, base_kw + name_match)
                 
                 # 3. Hybrid Combination
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
