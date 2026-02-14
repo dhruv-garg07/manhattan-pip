@@ -14,6 +14,7 @@ import math
 import hashlib
 import urllib.request
 import urllib.error
+import ssl
 from typing import List, Optional, Union, Dict, Any
 from pathlib import Path
 
@@ -169,6 +170,11 @@ class RemoteEmbeddingClient:
         if self._cache_path and self._cache_path.exists():
             self._load_cache()
         
+        # SSL Context for certificate issues
+        self.ssl_context = ssl.create_default_context()
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
+
         api_type = "Gradio" if self._is_gradio else "REST"
         print(f"[Embedding] Using {api_type} API: {self.api_url}")
         print(f"[Embedding] Dimension: {self.dimension}")
@@ -307,7 +313,7 @@ class RemoteEmbeddingClient:
             method='POST'
         )
         
-        with urllib.request.urlopen(req, timeout=self.timeout) as response:
+        with urllib.request.urlopen(req, timeout=self.timeout, context=self.ssl_context) as response:
             result = json.loads(response.read().decode('utf-8'))
         
         # Check if it's the two-step Gradio format
@@ -320,7 +326,7 @@ class RemoteEmbeddingClient:
             for attempt in range(max_attempts):
                 req = urllib.request.Request(result_url, headers=headers, method='GET')
                 
-                with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=self.ssl_context) as response:
                     # Read streaming response
                     response_text = response.read().decode('utf-8')
                     
@@ -375,7 +381,7 @@ class RemoteEmbeddingClient:
             method='POST'
         )
         
-        with urllib.request.urlopen(req, timeout=self.timeout) as response:
+        with urllib.request.urlopen(req, timeout=self.timeout, context=self.ssl_context) as response:
             response_data = json.loads(response.read().decode('utf-8'))
         
         embedding_list = self._parse_response(response_data)

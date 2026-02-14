@@ -1,0 +1,54 @@
+[
+  {
+    "file_path": "/Users/gargdhruv/Desktop/manhattan-pip/test_dedup.py",
+    "file_name": "test_dedup.py",
+    "compact_skeleton": "{\"tree\": {\"id\": \"3798e923\", \"type\": \"start\", \"content\": \"File: test_dedup.py\", \"line\": 1, \"scope\": [], \"children\": [{\"id\": \"7dffb4cd\", \"type\": \"processing\", \"content\": \"def stable_func(): return 42\", \"line\": 1, \"scope\": [], \"children\": []}, {\"id\": \"9db083e3\", \"type\": \"processing\", \"content\": \"class StableClass: pass\", \"line\": 4, \"scope\": [], \"children\": []}, {\"id\": \"6b0925c0\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 5, \"scope\": [], \"children\": []}]}, \"index\": {\"key\": \"stable_func\", \"value\": [\"7dffb4cd\"], \"left\": {\"key\": \"StableClass\", \"value\": [\"9db083e3\"], \"left\": null, \"right\": null}, \"right\": null}, \"node_map\": {\"3798e923\": {\"id\": \"3798e923\", \"type\": \"start\", \"content\": \"File: test_dedup.py\", \"line\": 1, \"scope\": [], \"children\": [{\"id\": \"7dffb4cd\", \"type\": \"processing\", \"content\": \"def stable_func(): return 42\", \"line\": 1, \"scope\": [], \"children\": []}, {\"id\": \"9db083e3\", \"type\": \"processing\", \"content\": \"class StableClass: pass\", \"line\": 4, \"scope\": [], \"children\": []}, {\"id\": \"6b0925c0\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 5, \"scope\": [], \"children\": []}]}, \"7dffb4cd\": {\"id\": \"7dffb4cd\", \"type\": \"processing\", \"content\": \"def stable_func(): return 42\", \"line\": 1, \"scope\": [], \"children\": []}, \"9db083e3\": {\"id\": \"9db083e3\", \"type\": \"processing\", \"content\": \"class StableClass: pass\", \"line\": 4, \"scope\": [], \"children\": []}, \"6b0925c0\": {\"id\": \"6b0925c0\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 5, \"scope\": [], \"children\": []}}}",
+    "chunks": [
+      {
+        "hash_id": "5e10d42c54dc888262eb28ac4804220841c99594caea2662ad368162109d6a19",
+        "content": "def stable_func():\n    return 42",
+        "type": "function",
+        "name": "stable_func",
+        "start_line": 1,
+        "end_line": 2,
+        "language": "python",
+        "embedding_id": null,
+        "token_count": 8,
+        "vector": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "keywords": [],
+        "summary": ""
+      },
+      {
+        "hash_id": "c21ba2c518564e612a8b1245a9de42344b8b13802cc29b03e5284476ba32aedf",
+        "content": "class StableClass:\n    pass",
+        "type": "class",
+        "name": "StableClass",
+        "start_line": 4,
+        "end_line": 5,
+        "language": "python",
+        "embedding_id": null,
+        "token_count": 6,
+        "vector": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "keywords": [],
+        "summary": ""
+      }
+    ],
+    "language": "auto",
+    "agent_id": "test_agent",
+    "session_id": "",
+    "last_accessed_at": "2026-02-14T17:30:36.203997",
+    "token_estimate": 14,
+    "file_modified_at": "2026-02-14T17:30:36.203997",
+    "id": "6d694a70-1276-463c-bff6-0fdd6d6ddcc0",
+    "created_at": "2026-02-14T17:30:36.202096",
+    "access_count": 2
+  }
+]

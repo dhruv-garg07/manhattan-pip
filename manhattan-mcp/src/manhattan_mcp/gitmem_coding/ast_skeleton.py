@@ -5,7 +5,7 @@ Generates a structured Code Flow Tree (Start, Input, Processing, Decision, Itera
 and a BST-based Symbol Index for efficient O(log n) retrieval.
 """
 
-import ast
+import uuid
 import json
 import os
 from typing import List, Dict, Any, Optional, Tuple
@@ -92,62 +92,72 @@ class BSTIndex:
         else:
             return self._search_recursive(node.right, key)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Serialize BST to dictionary."""
-        return self._node_to_dict(self.root)
+    def to_dict(self) -> Dict[str, List[str]]:
+        """Serialize BST to flat dictionary (Symbol -> NodeIDs)."""
+        flat_index = {}
+        self._flatten(self.root, flat_index)
+        return flat_index
 
-    def _node_to_dict(self, node: Optional[BSTNode]) -> Optional[Dict[str, Any]]:
+    def _flatten(self, node: Optional[BSTNode], flat_index: Dict[str, List[str]]):
         if not node:
-            return None
-        return {
-            "key": node.key,
-            "value": node.value,
-            "left": self._node_to_dict(node.left),
-            "right": self._node_to_dict(node.right)
-        }
+            return
+        flat_index[node.key] = node.value
+        self._flatten(node.left, flat_index)
+        self._flatten(node.right, flat_index)
 
-# ─── AST Analysis & Generation ──────────────────────────────────────────────
+# ─── Context Tree Builder ──────────────────────────────────────────────────
 
-import uuid
-
-class CodeFlowGenerator:
+class ContextTreeBuilder:
     """
-    Parses source code into a Code Flow Tree and builds a BST Index.
+    Builds a Code Flow Tree and BST Index from pre-chunked data.
     """
     
     def __init__(self):
         self.bst = BSTIndex()
-        self.node_map: Dict[str, FlowNode] = {}  # ID -> Node for quick lookup during path reconstruction
+        self.node_map: Dict[str, FlowNode] = {}
 
-    def generate(self, source: str, file_path: str = "") -> Dict[str, Any]:
+    def build(self, chunks: List[Dict[str, Any]], file_path: str = "") -> Dict[str, Any]:
         """
-        Generate the Code Flow structure and Index.
+        Build the Code Flow structure and Index from chunks.
         Returns a dict with 'tree' and 'index'.
         """
         try:
-            tree = ast.parse(source)
-            lines = source.splitlines()
-            
             root_node = FlowNode("start", f"File: {os.path.basename(file_path)}", 1)
             self.node_map[root_node.id] = root_node
             
-            # Process module body
-            self._process_block(tree.body, root_node, lines)
-            
+            # Process chunks into nodes
+            for chunk in chunks:
+                # Determine type based on chunk data or default to processing
+                node_type = "processing"
+                content = chunk.get("content", "")
+                summary = chunk.get("summary", "")
+                display_content = summary if summary else self._truncate_content(content)
+                
+                line_number = chunk.get("start_line", 0)
+                
+                # Create node
+                flow_node = FlowNode(node_type, display_content, line_number)
+                self.node_map[flow_node.id] = flow_node
+                root_node.add_child(flow_node)
+                
+                # Index keywords
+                keywords = chunk.get("keywords", [])
+                for kw in keywords:
+                    self.bst.insert(kw, flow_node.id)
+                    
+                # Also index the name if present
+                name = chunk.get("name")
+                if name:
+                    self.bst.insert(name, flow_node.id)
+
             # Add end node
-            end_node = FlowNode("end", "End of File", len(lines))
+            end_line = chunks[-1].get("end_line", 0) if chunks else 1
+            end_node = FlowNode("end", "End of File", end_line)
             root_node.add_child(end_node)
-            self.node_map[end_node.id] = end_node
             
             return {
                 "tree": root_node.to_dict(),
-                "index": self.bst.to_dict(),
-                "node_map": {k: v.to_dict() for k, v in self.node_map.items()} # Serialize map for storage? Or just reconstruct?
-                # Storing full map might be redundant if we have the tree. 
-                # But for O(1) node lookup during retrieval from ID, we need it.
-                # For compression, we might re-build it on load or store it flat.
-                # Let's return flattened nodes for storage efficiency if needed, 
-                # but for now, the user wants the tree structure.
+                "index": self.bst.to_dict()
             }
         except Exception as e:
             return {
@@ -156,108 +166,28 @@ class CodeFlowGenerator:
                 "index": None
             }
 
-    def _process_block(self, block: List[ast.AST], parent: FlowNode, lines: List[str]):
-        """Recursively process a block of AST nodes."""
-        for node in block:
-            node_type = "processing"
-            content = self._get_source_segment(node, lines)
-            truncated_content = self._truncate_content(content)
-            
-            # Determine specific types
-            if isinstance(node, (ast.If, ast.Try)):
-                node_type = "decision"
-            elif isinstance(node, (ast.For, ast.While)):
-                node_type = "iteration"
-            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                node_type = "processing" # Definitions are processing steps that define structure
-            elif isinstance(node, ast.Return):
-                node_type = "output"
-            elif self._is_input(node):
-                node_type = "input"
-            elif self._is_output(node):
-                node_type = "output"
-
-            # Create node
-            flow_node = FlowNode(node_type, truncated_content, getattr(node, 'lineno', 0))
-            self.node_map[flow_node.id] = flow_node
-            parent.add_child(flow_node)
-
-            # Index symbols defined/used
-            self._index_node_symbols(node, flow_node.id)
-
-            # Recurse for children
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                self._process_block(node.body, flow_node, lines)
-            elif isinstance(node, ast.If):
-                # True branch
-                if_branch = FlowNode("decision_branch", "True", node.lineno)
-                self.node_map[if_branch.id] = if_branch
-                flow_node.add_child(if_branch)
-                self._process_block(node.body, if_branch, lines)
-                # False branch
-                if node.orelse:
-                    else_branch = FlowNode("decision_branch", "False", node.orelse[0].lineno)
-                    self.node_map[else_branch.id] = else_branch
-                    flow_node.add_child(else_branch)
-                    self._process_block(node.orelse, else_branch, lines)
-            elif isinstance(node, (ast.For, ast.While)):
-                loop_body = FlowNode("iteration_body", "Loop Body", node.lineno)
-                self.node_map[loop_body.id] = loop_body
-                flow_node.add_child(loop_body)
-                self._process_block(node.body, loop_body, lines)
-            elif isinstance(node, ast.Try):
-                try_block = FlowNode("processing", "Try Block", node.lineno)
-                self.node_map[try_block.id] = try_block
-                flow_node.add_child(try_block)
-                self._process_block(node.body, try_block, lines)
-                for handler in node.handlers:
-                    except_block = FlowNode("decision", f"Except {self._get_name(handler.type)}", handler.lineno)
-                    self.node_map[except_block.id] = except_block
-                    flow_node.add_child(except_block)
-                    self._process_block(handler.body, except_block, lines)
-
-    def _index_node_symbols(self, node: ast.AST, node_id: str):
-        """Extract and index variable/function names."""
-        # Defined names
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            self.bst.insert(node.name, node_id)
-        elif isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    self.bst.insert(target.id, node_id)
+    def _truncate_content(self, content: str, max_length: int = 500) -> str:
+        """Keep content concise but informative."""
+        if not content:
+            return ""
         
-        # Used names (simple traversal)
-        for child in ast.walk(node):
-            if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load):
-                 self.bst.insert(child.id, node_id)
+        # Strip internal whitespace but keep structure if it looks like a signature
+        lines = content.splitlines()
+        first_line = lines[0].strip()
+        
+        # If it's a docstring or single line, just take it
+        if len(lines) == 1:
+            return first_line[:max_length]
 
-    def _get_source_segment(self, node: ast.AST, lines: List[str]) -> str:
-        try:
-            return "\n".join(lines[node.lineno-1 : node.end_lineno])
-        except (AttributeError, IndexError):
-            return str(node)
+        # For multi-line, take first line (signature) + a bit of docstring if present
+        result = first_line
+        if len(lines) > 1 and '"""' in lines[1]:
+            result += " " + lines[1].strip()
+        
+        if len(result) > max_length:
+            return result[:max_length] + "..."
+        return result
 
-    def _truncate_content(self, content: str, max_length: int = 150) -> str:
-        """Keep content concise for ~50% compression."""
-        cleaned = " ".join(content.split())
-        if len(cleaned) > max_length:
-            return cleaned[:max_length] + "..."
-        return cleaned
-
-    def _is_input(self, node: ast.AST) -> bool:
-        # Heuristic for input
-        code = ast.dump(node)
-        return "input" in code or "argv" in code or "request" in code
-
-    def _is_output(self, node: ast.AST) -> bool:
-        # Heuristic for output
-        code = ast.dump(node)
-        return "print" in code or "write" in code or "return" in code or "send" in code
-
-    def _get_name(self, node) -> str:
-        if isinstance(node, ast.Name):
-            return node.id
-        return "Exception"
 
 # ─── Retrieval Helper ───────────────────────────────────────────────────────
 

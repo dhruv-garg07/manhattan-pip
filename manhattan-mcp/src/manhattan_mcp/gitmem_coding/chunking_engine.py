@@ -8,8 +8,41 @@ granular context retrieval and deduplication.
 import ast
 import hashlib
 import re
-from typing import List, Optional, Tuple, Any
+import os
+from typing import List, Optional, Tuple, Any, Dict
 from .models import CodeChunk, FileLanguage, TOKENS_PER_CHAR_RATIO
+
+def detect_language(file_path: str) -> str:
+    """Detect language from file extension."""
+    ext = os.path.splitext(file_path)[1].lower()
+    
+    mapping = {
+        ".py": "python",
+        ".js": "javascript",
+        ".ts": "typescript",
+        ".java": "java",
+        ".cpp": "cpp",
+        ".c": "c",
+        ".cs": "csharp",
+        ".go": "go",
+        ".rs": "rust",
+        ".rb": "ruby",
+        ".php": "php",
+        ".swift": "swift",
+        ".kt": "kotlin",
+        ".html": "html",
+        ".css": "css",
+        ".sql": "sql",
+        ".sh": "shell",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".json": "json",
+        ".toml": "toml",
+        ".md": "markdown",
+        ".xml": "xml"
+    }
+    
+    return mapping.get(ext, "other")
 
 class ChunkingEngine:
     """Base class for language-specific chunkers."""
@@ -97,11 +130,42 @@ class PythonChunker(ChunkingEngine):
                         end_line=node.end_lineno,
                         language="python"
                     ))
-                    
-                    # Optional: Also chunk methods inside the class?
-                    # For now, let's keep Class as the unit, or maybe both?
-                    # "Refined Strategy": Store Class signature as one chunk + methods as children?
-                    # Simple approach first: Just top-level chunks.
+                    # Chunk methods inside the class
+                    for item in node.body:
+                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            method_content = get_segment(item)
+                            chunks.append(self._create_chunk(
+                                content=method_content,
+                                chunk_type="method",
+                                name=f"{node.name}.{item.name}",
+                                start_line=item.lineno,
+                                end_line=item.end_lineno,
+                                language="python"
+                            ))
+                elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                    # Group imports? For now just take individual
+                    chunk_content = get_segment(node)
+                    chunks.append(self._create_chunk(
+                        content=chunk_content,
+                        chunk_type="import",
+                        name="imports",
+                        start_line=node.lineno,
+                        end_line=node.end_lineno,
+                        language="python"
+                    ))
+                elif isinstance(node, ast.Assign):
+                    # Capture top-level assignments (constants/config)
+                    # Only if simple (target is Name)
+                    if any(isinstance(t, ast.Name) for t in node.targets):
+                        chunk_content = get_segment(node)
+                        chunks.append(self._create_chunk(
+                            content=chunk_content,
+                            chunk_type="assignment",
+                            name="constant",
+                            start_line=node.lineno,
+                            end_line=node.end_lineno,
+                            language="python"
+                        ))
                 
                 # We can also capture imports as a block?
                 

@@ -1,0 +1,38 @@
+{
+  "5e10d42c54dc888262eb28ac4804220841c99594caea2662ad368162109d6a19": {
+    "hash_id": "5e10d42c54dc888262eb28ac4804220841c99594caea2662ad368162109d6a19",
+    "content": "def stable_func():\n    return 42",
+    "type": "function",
+    "name": "stable_func",
+    "start_line": 1,
+    "end_line": 2,
+    "language": "python",
+    "embedding_id": null,
+    "token_count": 8,
+    "vector": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "keywords": [],
+    "summary": ""
+  },
+  "c21ba2c518564e612a8b1245a9de42344b8b13802cc29b03e5284476ba32aedf": {
+    "hash_id": "c21ba2c518564e612a8b1245a9de42344b8b13802cc29b03e5284476ba32aedf",
+    "content": "class StableClass:\n    pass",
+    "type": "class",
+    "name": "StableClass",
+    "start_line": 4,
+    "end_line": 5,
+    "language": "python",
+    "embedding_id": null,
+    "token_count": 6,
+    "vector": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "keywords": [],
+    "summary": ""
+  }
+}

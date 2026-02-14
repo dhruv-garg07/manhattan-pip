@@ -104,6 +104,8 @@ class FileContext:
     
     # Chunking references
     chunk_hashes: List[str] = field(default_factory=list)  # IDs of semantic chunks in this file
+    chunks: List[Dict[str, Any]] = field(default_factory=list) # Full chunk data for this file
+
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, excluding content for listings."""
@@ -220,6 +222,11 @@ class CodeChunk:
     embedding_id: Optional[str] = None  # Reference to vector embedding
     token_count: int = 0
     
+    # New fields for hybrid retrieval
+    vector: List[float] = field(default_factory=list)
+    keywords: List[str] = field(default_factory=list)
+    summary: str = ""  # Lossless restatement
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 

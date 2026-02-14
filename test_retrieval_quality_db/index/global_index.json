@@ -1,0 +1,86 @@
+{
+  "imports": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "constant": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.__init__": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._ensure_dirs": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._ensure_agent": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._load_config": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._load_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._get_agent_path": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._load_agent_data": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._save_config": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._save_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._load_global_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._remove_from_global_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._save_agent_data": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._save_global_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore._update_global_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.store_file_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.get_cached_chunk": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.cache_chunk": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.delete_code_flow": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.cleanup_stale_contexts": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.delete_agent_data": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.retrieve_file_context": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.list_code_flows": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.get_token_savings_report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.list_agents": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ],
+  "CodingContextStore.record_session_activity": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_store.py"
+  ]
+}

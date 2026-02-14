@@ -1,0 +1,32 @@
+[
+  {
+    "file_path": "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/test_coding_env/test_file.py",
+    "file_name": "test_file.py",
+    "compact_skeleton": "{\"tree\": {\"id\": \"1f2d8da9\", \"type\": \"start\", \"content\": \"File: test_file.py\", \"line\": 1, \"scope\": [], \"children\": [{\"id\": \"44929192\", \"type\": \"processing\", \"content\": \"def hello(): print('Hello world!')\", \"line\": 1, \"scope\": [], \"children\": []}, {\"id\": \"0d2364c3\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 2, \"scope\": [], \"children\": []}]}, \"index\": {\"key\": \"hello\", \"value\": [\"44929192\"], \"left\": null, \"right\": null}, \"node_map\": {\"1f2d8da9\": {\"id\": \"1f2d8da9\", \"type\": \"start\", \"content\": \"File: test_file.py\", \"line\": 1, \"scope\": [], \"children\": [{\"id\": \"44929192\", \"type\": \"processing\", \"content\": \"def hello(): print('Hello world!')\", \"line\": 1, \"scope\": [], \"children\": []}, {\"id\": \"0d2364c3\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 2, \"scope\": [], \"children\": []}]}, \"44929192\": {\"id\": \"44929192\", \"type\": \"processing\", \"content\": \"def hello(): print('Hello world!')\", \"line\": 1, \"scope\": [], \"children\": []}, \"0d2364c3\": {\"id\": \"0d2364c3\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 2, \"scope\": [], \"children\": []}}}",
+    "chunks": [
+      {
+        "hash_id": "2fe596ccf0022b94cdf328ba2f461603a9bf0034ac1b222f3558e97d6f60024f",
+        "content": "def hello():\n    print('Hello world!')",
+        "type": "function",
+        "name": "hello",
+        "start_line": 1,
+        "end_line": 2,
+        "language": "python",
+        "embedding_id": null,
+        "token_count": 9,
+        "vector": [],
+        "keywords": [],
+        "summary": ""
+      }
+    ],
+    "language": "python",
+    "agent_id": "test_agent",
+    "session_id": "",
+    "last_accessed_at": "2026-02-14T17:07:31.067688",
+    "token_estimate": 9,
+    "file_modified_at": "2026-02-14T17:07:31.067688",
+    "id": "e280bccf-d971-4dbf-888b-2f50df8878fc",
+    "created_at": "2026-02-14T17:07:31.067688",
+    "access_count": 1
+  }
+]

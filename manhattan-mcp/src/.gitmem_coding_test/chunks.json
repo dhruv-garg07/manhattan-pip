@@ -1,0 +1,35 @@
+{
+  "eec971245f75e1832aa7dcd3f838ae50b5b2e3ca8b45b27529cb0222db971973": {
+    "hash_id": "eec971245f75e1832aa7dcd3f838ae50b5b2e3ca8b45b27529cb0222db971973",
+    "content": "def calculate_sum(a, b):\n    result = a + b\n    if result > 10:\n        print(\"Large sum\")\n    else:\n        print(\"Small sum\")\n    return result",
+    "type": "function",
+    "name": "calculate_sum",
+    "start_line": 2,
+    "end_line": 8,
+    "language": "python",
+    "embedding_id": null,
+    "token_count": 36
+  },
+  "7e20a0d014169f384480e732f56548db33b3bd6739b4a1cbe53d143a7705fa73": {
+    "hash_id": "7e20a0d014169f384480e732f56548db33b3bd6739b4a1cbe53d143a7705fa73",
+    "content": "class Calculator:\n    def __init__(self):\n        self.history = []\n    \n    def add(self, x, y):\n        res = calculate_sum(x, y)\n        self.history.append(res)\n        return res",
+    "type": "class",
+    "name": "Calculator",
+    "start_line": 10,
+    "end_line": 17,
+    "language": "python",
+    "embedding_id": null,
+    "token_count": 45
+  },
+  "4bd783d89aedd2013d3e91ee01fe17fe4e7f5a3cad211c292814777a6910f463": {
+    "hash_id": "4bd783d89aedd2013d3e91ee01fe17fe4e7f5a3cad211c292814777a6910f463",
+    "content": "def subtract(a, b): return a - b",
+    "type": "function",
+    "name": "subtract",
+    "start_line": 20,
+    "end_line": 20,
+    "language": "python",
+    "embedding_id": null,
+    "token_count": 8
+  }
+}
