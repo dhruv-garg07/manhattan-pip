@@ -31,13 +31,36 @@ class CodingAPI:
         self.retriever = CodingHybridRetriever(self.store, self.vector_store)
     
     # 1. Create
-    def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Create a Code Flow structure for a file.
-        Chunks MUST be provided by the caller (Coding Agent).
+        If chunks are not provided, falls back to local AST parsing.
         """
         if chunks is None:
-            raise ValueError("Chunks must be provided explicitly. Auto-chunking is disabled.")
+            # Fallback to local AST parsing
+            if not os.path.exists(file_path):
+                return {"status": "error", "message": f"File not found for auto-chunking: {file_path}"}
+            
+            from .chunking_engine import ChunkingEngine, detect_language
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
+                
+                lang = detect_language(file_path)
+                chunker = ChunkingEngine.get_chunker(lang)
+                code_chunks = chunker.chunk_file(content, file_path)
+                
+                # Convert CodeChunk objects to dicts
+                chunks = []
+                for cc in code_chunks:
+                    c_dict = cc.to_dict()
+                    # Add a simple summary if missing
+                    if not c_dict.get("summary"):
+                        c_dict["summary"] = f"Code unit: {c_dict.get('name', 'unnamed')}"
+                    chunks.append(c_dict)
+                    
+            except Exception as e:
+                return {"status": "error", "message": f"Auto-chunking failed: {str(e)}"}
             
         return self.builder.process_file_chunks(
             agent_id=agent_id,
@@ -58,13 +81,36 @@ class CodingAPI:
         return results
 
     # 3. Update
-    def update_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def update_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Update the Code Flow for a file.
-        Chunks MUST be provided explicitly.
+        If chunks are not provided, falls back to local AST parsing.
         """
         if chunks is None:
-            raise ValueError("Chunks must be provided explicitly. Auto-chunking is disabled.")
+            # Fallback to local AST parsing
+            if not os.path.exists(file_path):
+                return {"status": "error", "message": f"File not found for auto-chunking: {file_path}"}
+            
+            from .chunking_engine import ChunkingEngine, detect_language
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
+                
+                lang = detect_language(file_path)
+                chunker = ChunkingEngine.get_chunker(lang)
+                code_chunks = chunker.chunk_file(content, file_path)
+                
+                # Convert CodeChunk objects to dicts
+                chunks = []
+                for cc in code_chunks:
+                    c_dict = cc.to_dict()
+                    # Add a simple summary if missing
+                    if not c_dict.get("summary"):
+                        c_dict["summary"] = f"Code unit: {c_dict.get('name', 'unnamed')}"
+                    chunks.append(c_dict)
+                    
+            except Exception as e:
+                return {"status": "error", "message": f"Auto-chunking failed: {str(e)}"}
             
         return self.builder.process_file_chunks(
             agent_id=agent_id,

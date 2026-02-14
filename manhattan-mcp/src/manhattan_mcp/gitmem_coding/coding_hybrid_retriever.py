@@ -118,8 +118,16 @@ class CodingHybridRetriever:
             
             # Metadata Filtering
             if file_filter:
-                normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep)
-                if normalized_filter.lower() not in file_path.lower():
+                normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep).lower()
+                path_lower = file_path.lower()
+                
+                # Strict check first
+                if normalized_filter in path_lower:
+                    pass
+                # Lenient check: if filename matches, allow it even if directories differ
+                elif os.path.basename(normalized_filter) in os.path.basename(path_lower):
+                    pass
+                else:
                     continue
 
             chunks = ctx.get("chunks", [])
