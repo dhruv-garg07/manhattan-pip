@@ -985,7 +985,9 @@ if coding_api is not None:
         The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
 
         summary:
-        A LOSSLESS RESTATEMENT of the logic. Fully self-contained factual description of what the code does.
+        A LOSSLESS RESTATEMENT of the logic (~50% compression target).
+        - Must be detailed enough to reconstruct the logic but concise enough to save tokens.
+        - Ensure input/output schemas and field names remain intact.
         - subject (function/class)
         - action (logic performed)
         - object (inputs/outputs)
@@ -1122,7 +1124,9 @@ if coding_api is not None:
         The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
 
         summary:
-        A LOSSLESS RESTATEMENT of the logic. Fully self-contained factual description of what the code does that can reduce tokens.
+        A LOSSLESS RESTATEMENT of the logic (~50% compression target).
+        - Must be detailed enough to reconstruct the logic but concise enough to save tokens.
+        - Ensure input/output schemas and field names remain intact.
         - subject (function/class)
         - action (logic performed)
         - object (inputs/outputs)

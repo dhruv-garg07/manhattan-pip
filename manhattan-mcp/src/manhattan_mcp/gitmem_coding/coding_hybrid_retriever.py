@@ -117,9 +117,11 @@ class CodingHybridRetriever:
             
             # Metadata Filtering (User Requirement: Strict usage)
             if file_filter:
-                # Normalize filter for OS-agnostic matching (handle backslashes on Windows)
+                # Normalize filter for OS-agnostic matching
                 normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep)
-                if normalized_filter not in file_path:
+                
+                # Case-insensitive match for robustness (especially on Windows)
+                if normalized_filter.lower() not in file_path.lower():
                     continue
 
             chunks = ctx.get("chunks", [])
