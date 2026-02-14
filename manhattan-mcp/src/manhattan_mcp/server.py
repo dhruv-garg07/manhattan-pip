@@ -938,14 +938,30 @@ if coding_api is not None:
         chunks: List[Dict[str, Any]] = None
     ) -> str:
         """
-        Create a Code Flow structure for a file.
-        
+        📝 Create a Code Flow structure for a file with semantic chunking.
+
+        ⚡ IMPORTANT FOR AI AGENTS: When providing chunks, you MUST semantically
+        chunk the code into meaningful units. Each chunk should be ONE coherent
+        code unit (a function, class, method, import block, or logical code block).
+        DO NOT dump the entire file as one chunk.
+
         Args:
             agent_id: The agent ID
             file_path: Absolute path to the file on disk
-            chunks: Optional list of code chunks.
-                    If provided: Uses provided chunks (required fields: content, start_line, end_line).
-                    If OMITTED: Reads file from disk and automatically generates chunks.
+            chunks: Optional list of semantic code chunks.
+                    If provided: Uses your pre-chunked semantic units.
+                      REQUIRED fields per chunk:
+                        - content (str): The actual source code text of this chunk
+                        - type (str): One of 'function', 'class', 'method', 'import', 'block', 'assignment'
+                        - name (str): Name of the entity (e.g., function name, class name)
+                        - start_line (int): Start line number in the original file
+                        - end_line (int): End line number in the original file
+                      RECOMMENDED fields per chunk:
+                        - keywords (list[str]): Searchable terms (e.g., ['auth', 'login', 'validate'])
+                        - summary (str): One-sentence natural language description of what the chunk does
+                      NOTE: Each chunk will receive exactly ONE vector embedding automatically
+                            via the remote embedding API. You do NOT need to provide vectors.
+                    If OMITTED: Reads file from disk and automatically generates chunks via AST parsing.
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.create_flow(agent_id, file_path, chunks)
@@ -978,14 +994,28 @@ if coding_api is not None:
         chunks: List[Dict[str, Any]] = None
     ) -> str:
         """
-        Update the Code Flow for a file.
-        
+        📝 Update the Code Flow for a file with semantic chunking.
+
+        ⚡ IMPORTANT FOR AI AGENTS: When providing chunks, you MUST semantically
+        chunk the code into meaningful units. Same rules as create_flow apply.
+
         Args:
             agent_id: The agent ID
             file_path: Absolute path to the file
-            chunks: Optional list of new chunks.
-                    If provided: Uses provided chunks.
-                    If OMITTED: Re-reads file from disk and regenerates chunks.
+            chunks: Optional list of semantic code chunks.
+                    If provided: Uses your pre-chunked semantic units.
+                      REQUIRED fields per chunk:
+                        - content (str): The actual source code text of this chunk
+                        - type (str): One of 'function', 'class', 'method', 'import', 'block', 'assignment'
+                        - name (str): Name of the entity (e.g., function name, class name)
+                        - start_line (int): Start line number in the original file
+                        - end_line (int): End line number in the original file
+                      RECOMMENDED fields per chunk:
+                        - keywords (list[str]): Searchable terms
+                        - summary (str): One-sentence description of what this chunk does
+                      NOTE: Each chunk gets exactly ONE vector embedding automatically.
+                            You do NOT need to provide vectors.
+                    If OMITTED: Re-reads file from disk and regenerates chunks via AST parsing.
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.update_flow(agent_id, file_path, chunks)

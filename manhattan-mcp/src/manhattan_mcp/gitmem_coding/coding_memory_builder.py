@@ -2,7 +2,7 @@
 Coding Memory Builder
 
 Handles the ingestion of code chunks, ensuring they have vector embeddings
-before storage. Acts as the construction phase for the Coding Context.
+stored in the dedicated CodingVectorStore (vectors.json) before storage.
 """
 from typing import List, Dict, Any, Optional
 import os
@@ -10,6 +10,7 @@ import uuid
 from .models import CodeChunk
 from ..gitmem.embedding import RemoteEmbeddingClient
 from .coding_store import CodingContextStore
+from .coding_vector_store import CodingVectorStore
 import logging
 
 # Configure logger
@@ -21,16 +22,18 @@ class CodingMemoryBuilder:
     
     Responsibilities:
     1. Accepts code chunks (from file or pre-computed).
-    2. Ensures every chunk has a vector embedding (calls RemoteEmbeddingClient).
-    3. Persists the enriched chunks to CodingContextStore.
+    2. Ensures every chunk has a vector embedding stored in CodingVectorStore.
+    3. Persists the chunks (without inline vectors) to CodingContextStore.
     """
     def __init__(
         self,
         store: CodingContextStore,
+        vector_store: CodingVectorStore,
         embedding_client: Optional[RemoteEmbeddingClient] = None
     ):
         self.store = store
-        self.embedding_client = embedding_client or RemoteEmbeddingClient()
+        self.vector_store = vector_store
+        self.embedding_client = embedding_client or vector_store.embedding_client
         
     def process_file_chunks(
         self,
@@ -42,53 +45,76 @@ class CodingMemoryBuilder:
     ) -> Dict[str, Any]:
         """
         Process and store chunks for a file.
-        Ensures all chunks have embeddings before storage.
+        Ensures all chunks have embeddings in vectors.json before storage.
         """
+        import hashlib
+        import re
+
         enriched_chunks = []
         
-        # 1. Enrich chunks with embeddings
         for chunk_data in chunks:
-            # Create a shallow copy to avoid modifying original if needed, 
-            # but we likely want to modify it for storage.
             chunk = chunk_data.copy()
             
-            # Check if vector is missing or empty
-            if "vector" not in chunk or not chunk["vector"]:
-                # 1.1 TRY CACHE DEDUPLICATION
-                hash_id = chunk.get("hash_id")
+            # Ensure hash_id exists (critical for vector storage)
+            if not chunk.get("hash_id") and chunk.get("content"):
+                # Normalize whitespace for consistent hashing
+                normalized = re.sub(r'\s+', ' ', chunk["content"]).strip()
+                chunk["hash_id"] = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+
+            hash_id = chunk.get("hash_id")
+            
+            # Check if vector already exists in vector store
+            existing_vec = None
+            if hash_id:
+                existing_vec = self.vector_store.get_vector(agent_id, hash_id)
+
+            if not existing_vec:
+                # Try cache deduplication from global chunk registry
                 if hash_id:
                     cached_chunk = self.store.get_cached_chunk(hash_id)
+                    # Cached chunk might still have inline vector from old format
                     if cached_chunk and cached_chunk.get("vector"):
-                        chunk["vector"] = cached_chunk["vector"]
-                        # logger.info(f"Cache hit for chunk {hash_id[:8]}")
-                        enriched_chunks.append(chunk)
-                        continue
+                        # Migrate: store it in vector store
+                        self.vector_store.add_vector_raw(
+                            agent_id, hash_id, cached_chunk["vector"]
+                        )
+                        existing_vec = cached_chunk["vector"]
 
-                # 1.2 Generate embedding (Cache Miss)
+            if not existing_vec:
+                # Generate embedding
                 content_to_embed = self._prepare_embedding_text(chunk)
                 if content_to_embed:
                     try:
                         vector = self.embedding_client.embed(content_to_embed)
-                        # Ensure serialization: convert to list if it's a vector object
                         if hasattr(vector, 'tolist'):
                             vector = vector.tolist()
                         elif not isinstance(vector, list):
                             vector = list(vector)
-                            
-                        chunk["vector"] = vector
                         
-                        # 1.3 Cache the new chunk
+                        # Store in dedicated vectors.json
                         if hash_id:
-                            self.store.cache_chunk(chunk)
-                            
+                            self.vector_store.add_vector_raw(agent_id, hash_id, vector)
+                        
                     except Exception as e:
-                        logger.error(f"Failed to generate embedding for chunk {chunk.get('name', 'unknown')}: {e}")
-                        # Depending on policy, we might skip or store without vector
-                        chunk["vector"] = []
+                        logger.error(
+                            f"Failed to generate embedding for chunk "
+                            f"{chunk.get('name', 'unknown')}: {e}"
+                        )
+
+            # Set embedding_id to reference the vector
+            if hash_id:
+                chunk["embedding_id"] = hash_id
+
+            # Remove inline vector from chunk (vectors live in vectors.json)
+            chunk.pop("vector", None)
+            
+            # Cache the chunk (without inline vector) in global registry
+            if hash_id:
+                self.store.cache_chunk(chunk)
             
             enriched_chunks.append(chunk)
 
-        # 2. Store enriched chunks
+        # Store chunks (no inline vectors)
         return self.store.store_file_chunks(
             agent_id=agent_id,
             file_path=file_path,
@@ -109,9 +135,8 @@ class CodingMemoryBuilder:
         if chunk.get("summary"):
             text_parts.append(chunk["summary"])
         elif chunk.get("content"):
-            # Limit content length to avoid exceeding token limits of embedding model
             content = chunk["content"]
-            text_parts.append(content[:1000]) # Truncate if too long?
+            text_parts.append(content[:1000])
         
         # 2. Keywords
         keywords = chunk.get("keywords", [])

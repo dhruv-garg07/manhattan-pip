@@ -57,6 +57,9 @@ from .coding_api import CodingAPI
 from .coding_memory_builder import CodingMemoryBuilder
 from .coding_hybrid_retriever import CodingHybridRetriever
 
+# Vector Store
+from .coding_vector_store import CodingVectorStore
+
 __version__ = "1.0.0"
 __author__ = "Manhattan AI"
 
@@ -68,6 +71,7 @@ __all__ = [
     
     # Storage Engine
     "CodingContextStore",
+    "CodingVectorStore",
     
     # Code Flow Generator
     "ContextTreeBuilder",

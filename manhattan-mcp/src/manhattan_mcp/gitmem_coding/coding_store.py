@@ -306,16 +306,18 @@ class CodingContextStore:
         return chunks.get(hash_id)
 
     def cache_chunk(self, chunk_data: Dict[str, Any]):
-        """Cache a chunk in the global registry."""
+        """Cache a chunk in the global registry (without inline vectors)."""
         hash_id = chunk_data.get("hash_id")
         if not hash_id:
             return
         
+        # Strip inline vector — vectors live in vectors.json
+        clean_chunk = {k: v for k, v in chunk_data.items() if k != "vector"}
+        
         with self._lock:
             chunks = self._load_chunks()
-            # Only update if new or has vector (and existing didn't)
-            if hash_id not in chunks or (chunk_data.get("vector") and not chunks[hash_id].get("vector")):
-                chunks[hash_id] = chunk_data
+            if hash_id not in chunks:
+                chunks[hash_id] = clean_chunk
                 self._save_chunks(chunks)
 
     def retrieve_file_context(

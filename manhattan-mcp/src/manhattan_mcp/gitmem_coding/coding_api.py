@@ -7,6 +7,7 @@ Provides exactly 4 CRUD operations to manage the Code Flow structure.
 
 from typing import Dict, Any, List
 from .coding_store import CodingContextStore
+from .coding_vector_store import CodingVectorStore
 from .coding_memory_builder import CodingMemoryBuilder
 from .coding_hybrid_retriever import CodingHybridRetriever
 from .chunking_engine import ChunkingEngine, detect_language
@@ -26,8 +27,9 @@ class CodingAPI:
     def __init__(self, root_path: str = "./.gitmem_coding"):
         """Initialize the Coding API."""
         self.store = CodingContextStore(root_path=root_path)
-        self.builder = CodingMemoryBuilder(self.store)
-        self.retriever = CodingHybridRetriever(self.store)
+        self.vector_store = CodingVectorStore(root_path=root_path)
+        self.builder = CodingMemoryBuilder(self.store, self.vector_store)
+        self.retriever = CodingHybridRetriever(self.store, self.vector_store)
     
     # 1. Create
     def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:

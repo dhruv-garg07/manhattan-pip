@@ -2,12 +2,15 @@
 Coding Hybrid Retriever
 
 Handles the retrieval of code chunks using a hybrid approach (Vector + Keyword).
+Loads vectors from the dedicated CodingVectorStore (vectors.json) rather than
+reading inline vector fields from chunks.
 """
 from typing import List, Dict, Any, Optional
 import os
 import json
 from ..gitmem.embedding import RemoteEmbeddingClient
 from .coding_store import CodingContextStore
+from .coding_vector_store import CodingVectorStore
 from .ast_skeleton import retrieve_path
 import logging
 
@@ -16,15 +19,17 @@ logger = logging.getLogger(__name__)
 class CodingHybridRetriever:
     """
     Centralized retrieval logic for coding contexts.
-    Combines semantic search (Vectors) and exact matching (Keywords/Symbols).
+    Combines semantic search (Vectors from vectors.json) and exact matching (Keywords/Symbols).
     """
     def __init__(
         self,
         store: CodingContextStore,
+        vector_store: CodingVectorStore,
         embedding_client: Optional[RemoteEmbeddingClient] = None
     ):
         self.store = store
-        self.embedding_client = embedding_client or RemoteEmbeddingClient()
+        self.vector_store = vector_store
+        self.embedding_client = embedding_client or vector_store.embedding_client
 
     def search(
         self,
@@ -40,7 +45,6 @@ class CodingHybridRetriever:
         Otherwise, performs hybrid search across all chunks.
         """
         # 1. File Path / ID Check (Direct Lookup)
-        # This preserves existing functionality for direct file access
         if "/" in query or "." in query.split("/")[-1]:
              if os.path.exists(query):
                 result = self.store.retrieve_file_context(agent_id, query)
@@ -66,13 +70,16 @@ class CodingHybridRetriever:
     ) -> List[Dict[str, Any]]:
         """
         Execute the hybrid search logic.
+        Loads vectors from vectors.json via CodingVectorStore.
         """
         # A. Prepare Query Representations
         
-        # Vector embedding
+        # Vector embedding for query
         query_vector = []
         try:
              query_vector = self.embedding_client.embed(query)
+             if hasattr(query_vector, 'tolist'):
+                 query_vector = query_vector.tolist()
         except Exception as e:
             logger.warning(f"Embedding generation failed for query '{query}': {e}")
             
@@ -80,10 +87,10 @@ class CodingHybridRetriever:
         query_keywords = set(query.lower().split())
 
         scored_chunks = []
-        # We need to access stored contexts. 
-        # Ideally store provides an iterator or we load all (memory constraints?)
-        # For now, load all file contexts for the agent.
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        
+        # Pre-load all vectors for this agent (single file read)
+        all_vectors = self.vector_store._load_vectors(agent_id)
         
         for ctx in contexts:
             file_path = ctx.get("file_path", "")
@@ -92,8 +99,12 @@ class CodingHybridRetriever:
             for chunk in chunks:
                 # 1. Vector Score (Cosine Similarity)
                 vec_score = 0.0
-                chunk_vec = chunk.get("vector")
-                if query_vector and chunk_vec:
+                # Look up vector from vectors.json using hash_id or embedding_id
+                hash_id = chunk.get("hash_id") or chunk.get("embedding_id")
+                chunk_vec = all_vectors.get(hash_id) if hash_id else None
+                
+                if (query_vector is not None and len(query_vector) > 0 
+                        and chunk_vec and len(chunk_vec) > 0):
                     # Dot product (assuming normalized vectors)
                     try:
                         vec_score = sum(a*b for a, b in zip(query_vector, chunk_vec))
@@ -103,7 +114,6 @@ class CodingHybridRetriever:
                 # 2. Keyword Score (Jaccard-ish)
                 kw_score = 0.0
                 chunk_kws = set(chunk.get("keywords", []))
-                # Add name to keywords for matching
                 if chunk.get("name"):
                     chunk_kws.add(chunk.get("name").lower())
                     
@@ -111,11 +121,8 @@ class CodingHybridRetriever:
                     overlap = len(query_keywords.intersection(chunk_kws))
                     if overlap > 0:
                         kw_score = overlap / len(query_keywords) 
-                        # Adjust denominator? Jaccard is union. 
-                        # But here we care about how much of query is covered.
                 
                 # 3. Hybrid Combination
-                # Final = alpha * Vector + (1-alpha) * Keyword
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
                 
                 if final_score > 0.01: # Threshold to filter noise
@@ -128,14 +135,6 @@ class CodingHybridRetriever:
                         "keyword_score": kw_score
                     })
 
-        # B. Fallback / Enhancement: Global Symbol Index Search
-        # If hybrid search yields low results, or specifically for symbol lookup
-        # We can also check the global index for exact matches of the query
-        # This was the "Symbol Search" features.
-        
-        # (Optional: Merge Global Index results if they point to files not in top chunks?)
-        # For now, let's trust the hybrid search on chunks since chunks contain names/keywords.
-        
         # Sort and return top_k
         scored_chunks.sort(key=lambda x: x["score"], reverse=True)
         return scored_chunks[:top_k]
