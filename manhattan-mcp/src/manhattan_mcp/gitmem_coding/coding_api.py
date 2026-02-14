@@ -50,14 +50,8 @@ class CodingAPI:
         """
         Retrieve Code Flow/Context based on query.
         
-        If query looks like a file path, attempts to return the full tree.
-        Otherwise, performs a hybrid search on chunks.
+        Performs a hybrid search on chunks.
         """
-        if query.startswith("FILE:"):
-            # Explicit file retrieval if needed?
-            # User said "never used but in metadatafiltering".
-            pass
-        
         # Hybrid Search on Chunks via Retriever
         results = self.retriever.search(agent_id, query)
         

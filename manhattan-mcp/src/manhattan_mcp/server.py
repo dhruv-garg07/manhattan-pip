@@ -942,9 +942,14 @@ if coding_api is not None:
 
         SYSTEM ROLE:
         You are a structured memory extraction engine. 
-        Your job is to convert dialogues into atomic factual memory records.
+        Your job is to convert dialogues and code context into atomic factual memory records.
 
-        CONTEXT:
+        INPUT CONTEXT:
+        The "context" provided here is a **LOSSLESS RESTATEMENT** of the code. 
+        It summarizes the logic, structure, and intent without including the full verbose code.
+        Treat this summary as the ground truth for the code's current state.
+
+        CONTEXT (Code Summary):
         {context}
 
         CURRENT WINDOW DIALOGUES:
@@ -970,32 +975,53 @@ if coding_api is not None:
 
         FIELD DEFINITIONS:
 
-        lossless_restatement:
-        A fully self-contained factual sentence containing:
-        - subject
-        - action
-        - object
-        - time (if available)
-        - location (if available)
+        name:
+        Name of the code entity (function name, class name, or "module_logic").
+
+        type:
+        Type of entity: "function", "class", "module", "block", "import".
+
+        content:
+        The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
+
+        summary:
+        A LOSSLESS RESTATEMENT of the logic. Fully self-contained factual description of what the code does.
+        - subject (function/class)
+        - action (logic performed)
+        - object (inputs/outputs)
+        - constraints/side-effects
 
         keywords:
-        Important nouns and concepts
+        Important concepts, algorithm names, dependencies, or patterns.
 
-        timestamp:
-        ISO 8601 format: YYYY-MM-DDTHH:MM:SS
-        Use only if explicitly derivable
+        start_line / end_line:
+        (Optional) Line numbers if known (default 0).
 
-        location:
-        Exact place name mentioned in dialogue
+        EXAMPLES:
+        
+        Input Dialogue: "We need to fix the auth bug in login.py where the token expires too soon."
+        Output CodeChunk:
+        {
+            "name": "login.py",
+            "type": "module",
+            "content": "def login(user): ...",
+            "summary": "The authentication bug in login.py causes tokens to expire prematurely.",
+            "keywords": ["auth bug", "login.py", "token expiration"],
+            "start_line": 0,
+            "end_line": 0
+        }
 
-        persons:
-        All human names mentioned in the statement
-
-        entities:
-        Organizations, products, services, projects, or systems
-
-        topic:
-        Short description of the information category
+        Input Code Summary: "Function process_data takes input_list and returns a sorted dictionary."
+        Output CodeChunk:
+        {
+            "name": "process_data",
+            "type": "function",
+            "content": "def process_data(input_list): ...",
+            "summary": "The process_data function sorts the input_list and returns a dictionary.",
+            "keywords": ["process_data", "sorting", "dictionary"],
+            "start_line": 10,
+            "end_line": 25
+        }
 
         OUTPUT FORMAT:
         Return ONLY a valid JSON array.
@@ -1007,25 +1033,23 @@ if coding_api is not None:
 
         [
           {{
-            "lossless_restatement": string,
+            "name": string,
+            "type": string,
+            "content": string,
+            "summary": string,
             "keywords": [string],
-            "timestamp": string | null,
-            "location": string | null,
-            "persons": [string],
-            "entities": [string],
-            "topic": string
+            "start_line": int,
+            "end_line": int
           }}
         ]
 
         QUALITY REQUIREMENTS:
-        - Multiple facts in one sentence → split into multiple entries
-        - Commitments, plans, agreements → separate entries
-        - Questions → capture as inquiry intent
-        - Decisions → capture as decision event
-        - Actions → capture as completed action
-        - Each entry must be atomic
+        - Summary must be a lossless restatement of logic
+        - Content should be minimal (signatures/stubs)
+        - Keywords should be search-optimized
+        - Each chunk must be atomic
 
-        Now extract the structured memories from the dialogues.
+        Now extract the structured code chunks from the context.
         Return ONLY the JSON array.
 
         Args:
@@ -1055,9 +1079,14 @@ if coding_api is not None:
 
         SYSTEM ROLE:
         You are a structured memory extraction engine. 
-        Your job is to convert dialogues into atomic factual memory records.
+        Your job is to convert dialogues and code context into atomic factual memory records.
 
-        CONTEXT:
+        INPUT CONTEXT:
+        The "context" provided here is a **LOSSLESS RESTATEMENT** of the code. 
+        It summarizes the logic, structure, and intent without including the full verbose code.
+        Treat this summary as the ground truth for the code's current state.
+
+        CONTEXT (Code Summary):
         {context}
 
         CURRENT WINDOW DIALOGUES:
@@ -1083,32 +1112,53 @@ if coding_api is not None:
 
         FIELD DEFINITIONS:
 
-        lossless_restatement:
-        A fully self-contained factual sentence containing:
-        - subject
-        - action
-        - object
-        - time (if available)
-        - location (if available)
+        name:
+        Name of the code entity (function name, class name, or "module_logic").
+
+        type:
+        Type of entity: "function", "class", "module", "block", "import".
+
+        content:
+        The code signature or key snippet (stub). MUST NOT be the full verbose code if summary is provided.
+
+        summary:
+        A LOSSLESS RESTATEMENT of the logic. Fully self-contained factual description of what the code does that can reduce tokens.
+        - subject (function/class)
+        - action (logic performed)
+        - object (inputs/outputs)
+        - constraints/side-effects
 
         keywords:
-        Important nouns and concepts
+        Important concepts, algorithm names, dependencies, or patterns.
 
-        timestamp:
-        ISO 8601 format: YYYY-MM-DDTHH:MM:SS
-        Use only if explicitly derivable
+        start_line / end_line:
+        (Optional) Line numbers if known (default 0).
 
-        location:
-        Exact place name mentioned in dialogue
+        EXAMPLES:
+        
+        Input Dialogue: "We need to fix the auth bug in login.py where the token expires too soon."
+        Output CodeChunk:
+        {
+            "name": "login.py",
+            "type": "module",
+            "content": "def login(user): ...",
+            "summary": "The authentication bug in login.py causes tokens to expire prematurely.",
+            "keywords": ["auth bug", "login.py", "token expiration"],
+            "start_line": 0,
+            "end_line": 0
+        }
 
-        persons:
-        All human names mentioned in the statement
-
-        entities:
-        Organizations, products, services, projects, or systems
-
-        topic:
-        Short description of the information category
+        Input Code Summary: "Function process_data takes input_list and returns a sorted dictionary."
+        Output CodeChunk:
+        {
+            "name": "process_data",
+            "type": "function",
+            "content": "def process_data(input_list): ...",
+            "summary": "The process_data function sorts the input_list and returns a dictionary.",
+            "keywords": ["process_data", "sorting", "dictionary"],
+            "start_line": 10,
+            "end_line": 25
+        }
 
         OUTPUT FORMAT:
         Return ONLY a valid JSON array.
@@ -1120,34 +1170,31 @@ if coding_api is not None:
 
         [
           {{
-            "lossless_restatement": string,
+            "name": string,
+            "type": string,
+            "content": string,
+            "summary": string,
             "keywords": [string],
-            "timestamp": string | null,
-            "location": string | null,
-            "persons": [string],
-            "entities": [string],
-            "topic": string
+            "start_line": int,
+            "end_line": int
           }}
         ]
 
         QUALITY REQUIREMENTS:
-        - Multiple facts in one sentence → split into multiple entries
-        - Commitments, plans, agreements → separate entries
-        - Questions → capture as inquiry intent
-        - Decisions → capture as decision event
-        - Actions → capture as completed action
-        - Each entry must be atomic
+        - Summary must be a lossless restatement of logic
+        - Content should be minimal (signatures/stubs)
+        - Keywords should be search-optimized
+        - Each chunk must be atomic
 
-        Now extract the structured memories from the dialogues.
+        Now extract the structured code chunks from the context.
         Return ONLY the JSON array.
         
         Uses **CodingHybridRetriever** for search.
         
         Args:
             agent_id: The agent ID
-            query: Search query.
-                   - If query is a file path (e.g., "/path/to/file.py"): Returns full Code Flow Tree.
-                   - If query is text (e.g., "authentication logic"): Performs Hybrid Search (Vector + Keyword) on chunks.
+            query: Search query. Example: "authentication logic" or "user session management".
+                   Performs Hybrid Search (Vector + Keyword) on chunks.
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.get_flow(agent_id, query)
