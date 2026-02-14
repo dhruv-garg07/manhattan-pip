@@ -36,27 +36,40 @@ class CodingHybridRetriever:
         agent_id: str,
         query: str,
         top_k: int = 5,
-        hybrid_alpha: float = 0.7 # Weight for vector score (0.0 to 1.0)
+        hybrid_alpha: float = 0.7 
     ) -> Dict[str, Any]:
         """
-        Perform a hybrid search for the query.
-        
-        If query looks like a file path, attempts to retrieve that file's context.
-        Otherwise, performs hybrid search across all chunks.
+        Perform a hybrid search for the query with metadata filtering.
         """
-        # 1. File Path / ID Check (Direct Lookup)
-        if "/" in query or "." in query.split("/")[-1]:
-             if os.path.exists(query):
-                result = self.store.retrieve_file_context(agent_id, query)
-                if result.get("status") != "cache_miss":
-                    return result
+        # 1. Metadata Filtering Extraction
+        file_filter = None
+        clean_query = query
         
-        # 2. Semantic/Keyword Search
-        results = self._hybrid_search_chunks(agent_id, query, top_k, hybrid_alpha)
+        # Simple heuristic: look for tokens that look like file paths
+        tokens = query.split()
+        for token in tokens:
+            if "/" in token or ("." in token and len(token) > 4):
+                file_filter = token
+                clean_query = query.replace(token, "").strip()
+                break
+        
+        
+        if not clean_query:
+            clean_query = "summary overview" 
+
+        # 2. Semantic/Keyword Search with Filter
+        results = self._hybrid_search_chunks(
+            agent_id, 
+            clean_query, 
+            top_k, 
+            hybrid_alpha,
+            file_filter=file_filter
+        )
         
         return {
             "status": "search_results",
-            "query": query,
+            "query": clean_query,
+            "filter": file_filter,
             "results": results,
             "count": len(results)
         }
@@ -66,7 +79,8 @@ class CodingHybridRetriever:
         agent_id: str,
         query: str,
         top_k: int,
-        alpha: float
+        alpha: float,
+        file_filter: str = None
     ) -> List[Dict[str, Any]]:
         """
         Execute the hybrid search logic.
@@ -88,12 +102,23 @@ class CodingHybridRetriever:
 
         scored_chunks = []
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
+
         
         # Pre-load all vectors for this agent (single file read)
         all_vectors = self.vector_store._load_vectors(agent_id)
+        if all_vectors is None:
+            all_vectors = {}
         
         for ctx in contexts:
             file_path = ctx.get("file_path", "")
+            
+            # Metadata Filtering (User Requirement: Strict usage)
+            if file_filter:
+                # Normalize filter for OS-agnostic matching (handle backslashes on Windows)
+                normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep)
+                if normalized_filter not in file_path:
+                    continue
+
             chunks = ctx.get("chunks", [])
             
             for chunk in chunks:
@@ -124,7 +149,6 @@ class CodingHybridRetriever:
                 
                 # 3. Hybrid Combination
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
-                
                 if final_score > 0.01: # Threshold to filter noise
                     scored_chunks.append({
                         "file_path": file_path,

@@ -10,7 +10,6 @@ from .coding_store import CodingContextStore
 from .coding_vector_store import CodingVectorStore
 from .coding_memory_builder import CodingMemoryBuilder
 from .coding_hybrid_retriever import CodingHybridRetriever
-from .chunking_engine import ChunkingEngine, detect_language
 import os
 
 class CodingAPI:
@@ -32,16 +31,13 @@ class CodingAPI:
         self.retriever = CodingHybridRetriever(self.store, self.vector_store)
     
     # 1. Create
-    def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Create a Code Flow structure for a file.
-        If chunks are provided, uses them.
-        If chunks are NOT provided, reads file from disk and auto-chunks.
-        
-        ALWAYS passes through CodingMemoryBuilder to ensure embeddings are generated.
+        Chunks MUST be provided by the caller (Coding Agent).
         """
         if chunks is None:
-            chunks = self._read_and_chunk_file(file_path)
+            raise ValueError("Chunks must be provided explicitly. Auto-chunking is disabled.")
             
         return self.builder.process_file_chunks(
             agent_id=agent_id,
@@ -57,12 +53,10 @@ class CodingAPI:
         If query looks like a file path, attempts to return the full tree.
         Otherwise, performs a hybrid search on chunks.
         """
-        # Try interpreting query as a file path first for backward compat/debugging
-        if "/" in query or "." in query.split("/")[-1]:
-             if os.path.exists(query):
-                result = self.store.retrieve_file_context(agent_id, query)
-                if result.get("status") != "cache_miss":
-                    return result
+        if query.startswith("FILE:"):
+            # Explicit file retrieval if needed?
+            # User said "never used but in metadatafiltering".
+            pass
         
         # Hybrid Search on Chunks via Retriever
         results = self.retriever.search(agent_id, query)
@@ -70,12 +64,13 @@ class CodingAPI:
         return results
 
     # 3. Update
-    def update_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def update_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Update the Code Flow for a file.
+        Chunks MUST be provided explicitly.
         """
         if chunks is None:
-            chunks = self._read_and_chunk_file(file_path)
+            raise ValueError("Chunks must be provided explicitly. Auto-chunking is disabled.")
             
         return self.builder.process_file_chunks(
             agent_id=agent_id,
@@ -94,24 +89,3 @@ class CodingAPI:
     def list_flows(self, agent_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
         """List all stored code flows."""
         return self.store.list_code_flows(agent_id, limit, offset)
-
-    def _read_and_chunk_file(self, file_path: str) -> List[Dict[str, Any]]:
-        """
-        Helper: Read file from disk and generate chunks locally.
-        """
-        normalized_path = os.path.normpath(file_path)
-        
-        if not os.path.exists(normalized_path):
-            raise FileNotFoundError(f"File not found: {normalized_path}")
-            
-        try:
-            with open(normalized_path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-        except OSError as e:
-            raise IOError(f"Failed to read file: {e}")
-            
-        language = detect_language(normalized_path)
-        chunker = ChunkingEngine.get_chunker(language)
-        chunks_objs = chunker.chunk_file(content, file_path)
-        
-        return [c.to_dict() for c in chunks_objs]

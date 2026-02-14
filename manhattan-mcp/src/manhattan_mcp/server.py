@@ -940,30 +940,27 @@ if coding_api is not None:
         """
         📝 Create a Code Flow structure for a file with semantic chunking.
 
-        ⚡ IMPORTANT FOR AI AGENTS: When providing chunks, you MUST semantically
-        chunk the code into meaningful units. Each chunk should be ONE coherent
-        code unit (a function, class, method, import block, or logical code block).
-        DO NOT dump the entire file as one chunk.
+        ⚡ CRITICAL FOR AI AGENTS: You are creating the mental model of this code.
+        You MUST provide `chunks` argument with semantically meaningful units
+        (functions, classes, etc.) that you have parsed.
+        
+        DO NOT rely on automatic chunking unless absolutely necessary.
+        Pre-chunking allows you to provide better context (keywords, summaries).
 
         Args:
             agent_id: The agent ID
             file_path: Absolute path to the file on disk
-            chunks: Optional list of semantic code chunks.
-                    If provided: Uses your pre-chunked semantic units.
-                      REQUIRED fields per chunk:
-                        - content (str): The actual source code text of this chunk
-                        - type (str): One of 'function', 'class', 'method', 'import', 'block', 'assignment'
-                        - name (str): Name of the entity (e.g., function name, class name)
-                        - start_line (int): Start line number in the original file
-                        - end_line (int): End line number in the original file
-                      RECOMMENDED fields per chunk:
-                        - keywords (list[str]): Searchable terms (e.g., ['auth', 'login', 'validate'])
-                        - summary (str): One-sentence natural language description of what the chunk does
-                      NOTE: Each chunk will receive exactly ONE vector embedding automatically
-                            via the remote embedding API. You do NOT need to provide vectors.
-                    If OMITTED: Reads file from disk and automatically generates chunks via AST parsing.
+            chunks: List of semantic code chunks.
+                    If provided: Uses YOUR high-quality pre-chunked semantic units.
+                    If OMITTED: Falls back to basic local AST parsing (less accurate).
         """
         agent_id = _normalize_agent_id(agent_id)
+        
+        if chunks:
+            print(f"[{agent_id}] Received {len(chunks)} semantic chunks for {file_path}")
+        else:
+            print(f"[{agent_id}] No chunks provided for {file_path} - falling back to local AST parsing.")
+
         result = coding_api.create_flow(agent_id, file_path, chunks)
         return json.dumps(result, indent=2)
 
@@ -996,28 +993,23 @@ if coding_api is not None:
         """
         📝 Update the Code Flow for a file with semantic chunking.
 
-        ⚡ IMPORTANT FOR AI AGENTS: When providing chunks, you MUST semantically
-        chunk the code into meaningful units. Same rules as create_flow apply.
+        ⚡ CRITICAL FOR AI AGENTS: Provide updated semantic chunks for this file.
+        Same rules as create_flow apply. Prioritize client-side chunking.
 
         Args:
             agent_id: The agent ID
             file_path: Absolute path to the file
-            chunks: Optional list of semantic code chunks.
-                    If provided: Uses your pre-chunked semantic units.
-                      REQUIRED fields per chunk:
-                        - content (str): The actual source code text of this chunk
-                        - type (str): One of 'function', 'class', 'method', 'import', 'block', 'assignment'
-                        - name (str): Name of the entity (e.g., function name, class name)
-                        - start_line (int): Start line number in the original file
-                        - end_line (int): End line number in the original file
-                      RECOMMENDED fields per chunk:
-                        - keywords (list[str]): Searchable terms
-                        - summary (str): One-sentence description of what this chunk does
-                      NOTE: Each chunk gets exactly ONE vector embedding automatically.
-                            You do NOT need to provide vectors.
-                    If OMITTED: Re-reads file from disk and regenerates chunks via AST parsing.
+            chunks: List of semantic code chunks.
+                    If provided: Uses YOUR high-quality pre-chunked semantic units.
+                    If OMITTED: Falls back to basic local AST parsing.
         """
         agent_id = _normalize_agent_id(agent_id)
+        
+        if chunks:
+            print(f"[{agent_id}] UPDATE: Received {len(chunks)} semantic chunks for {file_path}")
+        else:
+            print(f"[{agent_id}] UPDATE: No chunks provided for {file_path} - falling back to local AST parsing.")
+
         result = coding_api.update_flow(agent_id, file_path, chunks)
         return json.dumps(result, indent=2)
 

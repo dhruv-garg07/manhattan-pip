@@ -77,17 +77,24 @@ class CodingVectorStore:
     def _load_vectors(self, agent_id: str) -> Dict[str, List[float]]:
         """Load vectors.json for an agent (with in-memory caching)."""
         if agent_id in self._vector_cache:
-            return self._vector_cache[agent_id]
+            cached = self._vector_cache[agent_id]
+            if cached is not None:
+                return cached
 
         vectors_path = self._get_vectors_path(agent_id)
         if vectors_path.exists():
             try:
                 with open(vectors_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                
+                if data is None:
+                    data = {}
+
                 self._vector_cache[agent_id] = data
                 return data
             except Exception as e:
                 logger.error(f"[CodingVectorStore] Failed to load vectors: {e}")
+                return {}
 
         return {}
 
