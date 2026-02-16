@@ -7,6 +7,7 @@ reading inline vector fields from chunks.
 """
 from typing import List, Dict, Any, Optional
 import os
+import re
 import json
 import string
 from ..gitmem.embedding import RemoteEmbeddingClient
@@ -45,18 +46,33 @@ class CodingHybridRetriever:
         # 1. Metadata Filtering Extraction
         file_filter = None
         clean_query = query
+        route_tokens = []  # Collect route-style tokens for keyword enrichment
         
-        # Simple heuristic: look for tokens that look like file paths
-        import string
+        # Known file extensions for distinguishing file paths from URL routes
+        FILE_EXTENSIONS = {
+            '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.go', '.rs',
+            '.rb', '.php', '.c', '.cpp', '.h', '.hpp', '.cs', '.swift',
+            '.kt', '.scala', '.vue', '.svelte', '.html', '.css', '.scss',
+            '.json', '.yaml', '.yml', '.toml', '.xml', '.md', '.txt',
+            '.sh', '.bash', '.sql', '.r', '.m', '.lua', '.zig',
+        }
+        
         tokens = query.split()
         for token in tokens:
-            # Strip punctuation from the potential file path
-            clean_token = token.strip(string.punctuation)
-            if "/" in clean_token or ("." in clean_token and len(clean_token) > 4):
+            clean_token = token.strip(string.punctuation + "'\"")
+            if not clean_token:
+                continue
+            
+            # Check if token looks like a file path (must have a file extension)
+            _, ext = os.path.splitext(clean_token)
+            if ext.lower() in FILE_EXTENSIONS:
                 file_filter = clean_token
-                # Remove the original token from query to avoid doubling up match
                 clean_query = query.replace(token, "").strip()
                 break
+            
+            # Collect route-style tokens (e.g., /api/keys) for keyword enrichment
+            if '/' in clean_token and not ext:
+                route_tokens.append(clean_token)
         
         if not clean_query:
             clean_query = "summary overview" 
@@ -67,7 +83,8 @@ class CodingHybridRetriever:
             clean_query, 
             top_k, 
             hybrid_alpha,
-            file_filter=file_filter
+            file_filter=file_filter,
+            route_tokens=route_tokens
         )
         
         return {
@@ -84,7 +101,8 @@ class CodingHybridRetriever:
         query: str,
         top_k: int,
         alpha: float,
-        file_filter: str = None
+        file_filter: str = None,
+        route_tokens: List[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Execute the hybrid search logic.
@@ -102,8 +120,21 @@ class CodingHybridRetriever:
             logger.warning(f"Embedding generation failed for query '{query}': {e}")
             
         # Keyword tokens (simple split, removing small noise words)
-        STOP_WORDS = {"is", "the", "a", "an", "and", "or", "in", "on", "with", "how", "what", "where", "to", "for", "of"}
-        query_keywords = {w.lower().strip(string.punctuation) for w in query.split() if w.lower().strip(string.punctuation) not in STOP_WORDS}
+        STOP_WORDS = {"is", "the", "a", "an", "and", "or", "in", "on", "with", "how", "what", "where", "to", "for", "of", "can", "you", "explain", "from", "pull", "context", "only"}
+        query_keywords = {w.lower().strip(string.punctuation + "'\"")
+                          for w in query.split()
+                          if w.lower().strip(string.punctuation + "'\"") not in STOP_WORDS}
+        query_keywords.discard("")
+        
+        # Decompose route-style tokens into individual keywords
+        # e.g., "/api/keys" -> {"api", "keys"}
+        route_patterns = []  # Original route strings for content matching
+        if route_tokens:
+            for rt in route_tokens:
+                clean_rt = rt.strip(string.punctuation + "'\"")
+                route_patterns.append(clean_rt)
+                segments = [seg for seg in clean_rt.split('/') if seg and seg not in STOP_WORDS]
+                query_keywords.update(s.lower() for s in segments)
 
         scored_chunks = []
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
@@ -149,6 +180,7 @@ class CodingHybridRetriever:
                 chunk_kws = {kw.lower() for kw in chunk.get("keywords", [])}
                 chunk_name = chunk.get("name", "").lower()
                 chunk_summary = chunk.get("summary", "").lower()
+                chunk_content = chunk.get("content", "").lower()
                 
                 if query_keywords:
                     # A. Keyword overlap
@@ -170,8 +202,24 @@ class CodingHybridRetriever:
                     if summary_overlap > 0:
                         summary_match_boost = (summary_overlap / len(query_keywords)) * 0.3 # Max 0.3 boost from summary
                     
+                    # D. Route/Content Match Boost
+                    # Check if the original route pattern appears in content (e.g., @app.route('/api/keys'))
+                    route_match_boost = 0.0
+                    if route_patterns:
+                        for rp in route_patterns:
+                            if rp in chunk_content or rp in chunk_summary:
+                                route_match_boost = 0.6  # Strong boost for exact route match in content
+                                break
+                    
+                    # E. Content keyword overlap (fallback for keywords found in content)
+                    content_match_boost = 0.0
+                    if chunk_content and not overlap:
+                        content_hits = sum(1 for qkw in query_keywords if qkw in chunk_content)
+                        if content_hits > 0:
+                            content_match_boost = (content_hits / len(query_keywords)) * 0.2
+                    
                     # Combine Keyword Scores
-                    kw_score = min(1.0, base_kw + name_match_boost + summary_match_boost)
+                    kw_score = min(1.0, base_kw + name_match_boost + summary_match_boost + route_match_boost + content_match_boost)
                 
                 # 3. Hybrid Combination
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
