@@ -157,6 +157,7 @@ def test_scenario_3_search(api):
     print(f"    Top result: {top['chunk']['name']} (Score: {top['score']:.4f})")
     assert "logging" in top['chunk']['name'], "Top result should be logging related"
     assert top['vector_score'] > 0, "Vector score shoud be present"
+    assert "content" not in top['chunk'], "Full content should NOT be returned, only summary!"
     print("    ✅ Hybrid search returned relevant results with vector scores.")
 
 

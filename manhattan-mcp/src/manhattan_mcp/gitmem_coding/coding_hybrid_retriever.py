@@ -5,7 +5,7 @@ Handles the retrieval of code chunks using a hybrid approach (Vector + Keyword).
 Loads vectors from the dedicated CodingVectorStore (vectors.json) rather than
 reading inline vector fields from chunks.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 import os
 import re
 import json
@@ -32,6 +32,48 @@ class CodingHybridRetriever:
         self.store = store
         self.vector_store = vector_store
         self.embedding_client = embedding_client or vector_store.embedding_client
+
+    # Concept expansion: maps abstract terms to concrete keywords present in chunks
+    CONCEPT_MAP = {
+        # Security concepts
+        "security": {"hash", "sha256", "token", "authentication", "password", "secret", "login", "secure", "permissions", "credentials", "hashed_key"},
+        "auth": {"login", "authentication", "password", "token", "session", "oauth", "credentials", "sign_in_with_password"},
+        "authentication": {"login", "password", "oauth", "token", "session", "credentials", "sign_in_with_password", "flask-login"},
+        "authorization": {"oauth", "permissions", "token", "rls", "role", "login_required"},
+        
+        # Infrastructure concepts
+        "infrastructure": {"flask", "gevent", "socketio", "server", "render", "daemon", "blueprint", "initialization", "monkey_patch", "keep-alive"},
+        "devops": {"render", "daemon", "ping", "keep-alive", "server", "health", "timer", "background", "thread"},
+        "deployment": {"render", "server", "keep-alive", "daemon", "health", "ping"},
+        
+        # Data concepts
+        "database": {"supabase", "table", "query", "insert", "upsert", "select", "rls", "profiles", "client"},
+        "persistence": {"supabase", "database", "table", "insert", "store", "save", "json"},
+        "storage": {"supabase", "database", "json", "file", "upload", "save", "memory", "rag"},
+        
+        # UX concepts
+        "onboarding": {"register", "signup", "login", "profile", "dashboard", "welcome"},
+        "experience": {"user", "page", "template", "render", "form", "dashboard", "explore"},
+        
+        # Validation concepts
+        "validation": {"validate", "regex", "email", "password", "check", "form", "username_unique", "whitelist", "extension_validation"},
+        "sanitization": {"strip", "lower", "clean", "validate", "escape", "html_escape", "regex"},
+        
+        # API concepts
+        "api": {"endpoint", "route", "json", "post", "get", "request", "response", "api_key", "rest"},
+        "rest": {"endpoint", "route", "json", "post", "get", "request", "response"},
+        "json": {"jsonify", "json", "response", "api", "parse", "data"},
+        "response": {"return", "jsonify", "render_template", "redirect", "flash"},
+        "redirect": {"redirect", "url_for", "flash", "agent_detail", "login_google"},
+    }
+    
+    def _expand_concepts(self, keywords: Set[str]) -> Set[str]:
+        """Expand abstract concept keywords into concrete searchable terms."""
+        expanded = set(keywords)
+        for kw in keywords:
+            if kw in self.CONCEPT_MAP:
+                expanded.update(self.CONCEPT_MAP[kw])
+        return expanded
 
     def search(
         self,
@@ -95,6 +137,52 @@ class CodingHybridRetriever:
             "count": len(results)
         }
 
+    @staticmethod
+    def _decompose_compound(token: str) -> Set[str]:
+        """
+        Decompose compound identifiers into sub-tokens.
+        e.g., 'login_required' -> {'login', 'required'}
+              'camelCase' -> {'camel', 'case'}
+              '@decorator' -> {'decorator'}
+        """
+        parts = set()
+        # Strip common prefixes
+        clean = token.lstrip('@').strip(string.punctuation)
+        if not clean:
+            return parts
+        
+        # Split on underscores
+        if '_' in clean:
+            for seg in clean.split('_'):
+                seg = seg.lower().strip()
+                if len(seg) > 1:
+                    parts.add(seg)
+        
+        # Split camelCase
+        camel_parts = re.findall(r'[a-z]+|[A-Z][a-z]*|[A-Z]+(?=[A-Z][a-z]|$)', clean)
+        for cp in camel_parts:
+            cp = cp.lower().strip()
+            if len(cp) > 1:
+                parts.add(cp)
+        
+        # Always include the original (lowered)
+        parts.add(clean.lower())
+        return parts
+
+    @staticmethod
+    def _extract_line_numbers(query: str) -> List[int]:
+        """Extract line numbers from query like 'line 447' or 'at line 100'."""
+        line_nums = []
+        # Pattern: 'line <number>' or 'line: <number>' or 'lines <n>-<m>'
+        for m in re.finditer(r'\blines?\s*:?\s*(\d+)', query, re.IGNORECASE):
+            line_nums.append(int(m.group(1)))
+        # Also catch standalone 3+ digit numbers that look like line references
+        for m in re.finditer(r'\b(\d{3,})\b', query):
+            num = int(m.group(1))
+            if num < 50000:  # Reasonable line number
+                line_nums.append(num)
+        return line_nums
+
     def _hybrid_search_chunks(
         self,
         agent_id: str,
@@ -120,11 +208,27 @@ class CodingHybridRetriever:
             logger.warning(f"Embedding generation failed for query '{query}': {e}")
             
         # Keyword tokens (simple split, removing small noise words)
-        STOP_WORDS = {"is", "the", "a", "an", "and", "or", "in", "on", "with", "how", "what", "where", "to", "for", "of", "can", "you", "explain", "from", "pull", "context", "only"}
-        query_keywords = {w.lower().strip(string.punctuation + "'\"")
-                          for w in query.split()
-                          if w.lower().strip(string.punctuation + "'\"") not in STOP_WORDS}
+        STOP_WORDS = {"is", "the", "a", "an", "and", "or", "in", "on", "with", 
+                      "how", "what", "where", "to", "for", "of", "can", "you", 
+                      "explain", "from", "pull", "context", "only", "which",
+                      "does", "do", "that", "this", "it", "but", "not", "at",
+                      "by", "are", "be", "been", "has", "have", "was", "were"}
+        
+        raw_tokens = query.split()
+        query_keywords = set()
+        for w in raw_tokens:
+            cleaned = w.lower().strip(string.punctuation + "'\"")
+            if cleaned and cleaned not in STOP_WORDS:
+                query_keywords.add(cleaned)
+                # Also decompose compound tokens
+                query_keywords.update(self._decompose_compound(cleaned))
         query_keywords.discard("")
+        
+        # Expand abstract concepts into concrete keywords
+        query_keywords = self._expand_concepts(query_keywords)
+        
+        # Extract line numbers for positional matching
+        query_line_numbers = self._extract_line_numbers(query)
         
         # Decompose route-style tokens into individual keywords
         # e.g., "/api/keys" -> {"api", "keys"}
@@ -139,7 +243,6 @@ class CodingHybridRetriever:
         scored_chunks = []
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
         
-        # ... (vector loading same)
         all_vectors = self.vector_store._load_vectors(agent_id)
         if all_vectors is None:
             all_vectors = {}
@@ -177,13 +280,23 @@ class CodingHybridRetriever:
                 
                 # 2. Keyword Score (Enhanced)
                 kw_score = 0.0
-                chunk_kws = {kw.lower() for kw in chunk.get("keywords", [])}
+                # Build expanded keyword set for chunk (includes decomposed form)
+                chunk_kws = set()
+                for kw in chunk.get("keywords", []):
+                    chunk_kws.add(kw.lower())
+                    chunk_kws.update(self._decompose_compound(kw))
+                
                 chunk_name = chunk.get("name", "").lower()
+                chunk_name_parts = self._decompose_compound(chunk_name)
                 chunk_summary = chunk.get("summary", "").lower()
                 chunk_content = chunk.get("content", "").lower()
+                chunk_type = chunk.get("type", "").lower()
+                
+                # Tokenize summary into words for precise matching
+                summary_words = set(re.findall(r'[a-z0-9_]+', chunk_summary))
                 
                 if query_keywords:
-                    # A. Keyword overlap
+                    # A. Keyword overlap (with decomposed keywords)
                     overlap = query_keywords.intersection(chunk_kws)
                     base_kw = len(overlap) / len(query_keywords) if query_keywords else 0.0
                     
@@ -191,42 +304,74 @@ class CodingHybridRetriever:
                     name_match_boost = 0.0
                     for qkw in query_keywords:
                         if qkw == chunk_name:
-                            name_match_boost = 0.8  # Exact name match is extremely strong
+                            name_match_boost = 0.8  # Exact name match
                             break
+                        elif qkw in chunk_name_parts:
+                            name_match_boost = max(name_match_boost, 0.5)  # Part of name
                         elif qkw in chunk_name:
-                            name_match_boost = max(name_match_boost, 0.4) # Partial name match
+                            name_match_boost = max(name_match_boost, 0.4)  # Substring of name
                     
-                    # C. Summary Match Boost
+                    # C. Summary Match Boost (word-level, not substring)
                     summary_match_boost = 0.0
-                    summary_overlap = sum(1 for qkw in query_keywords if qkw in chunk_summary)
-                    if summary_overlap > 0:
-                        summary_match_boost = (summary_overlap / len(query_keywords)) * 0.3 # Max 0.3 boost from summary
+                    summary_overlap = query_keywords.intersection(summary_words)
+                    if summary_overlap:
+                        summary_match_boost = (len(summary_overlap) / len(query_keywords)) * 0.35
                     
                     # D. Route/Content Match Boost
-                    # Check if the original route pattern appears in content (e.g., @app.route('/api/keys'))
                     route_match_boost = 0.0
                     if route_patterns:
                         for rp in route_patterns:
                             if rp in chunk_content or rp in chunk_summary:
-                                route_match_boost = 0.6  # Strong boost for exact route match in content
+                                route_match_boost = 0.6
                                 break
                     
-                    # E. Content keyword overlap (fallback for keywords found in content)
+                    # E. Content keyword overlap (ALWAYS checked, not just fallback)
                     content_match_boost = 0.0
-                    if chunk_content and not overlap:
-                        content_hits = sum(1 for qkw in query_keywords if qkw in chunk_content)
-                        if content_hits > 0:
-                            content_match_boost = (content_hits / len(query_keywords)) * 0.2
+                    if chunk_content:
+                        content_words = set(re.findall(r'[a-z0-9_]+', chunk_content))
+                        content_hits = query_keywords.intersection(content_words)
+                        if content_hits:
+                            # Scale: more hits = more boost, but cap at 0.25
+                            content_match_boost = min(0.25, (len(content_hits) / len(query_keywords)) * 0.25)
+                    
+                    # F. Type Match Boost (query mentions 'class', 'function', etc.)
+                    type_match_boost = 0.0
+                    type_query_words = {"class", "function", "module", "block", "import",
+                                        "classes", "functions", "modules", "blocks"}
+                    query_type_mentions = query_keywords.intersection(type_query_words)
+                    if query_type_mentions and chunk_type:
+                        # Check if chunk type matches any type word in query
+                        for qt in query_type_mentions:
+                            if qt.rstrip('s') == chunk_type or qt == chunk_type:
+                                type_match_boost = 0.2
+                                break
                     
                     # Combine Keyword Scores
-                    kw_score = min(1.0, base_kw + name_match_boost + summary_match_boost + route_match_boost + content_match_boost)
+                    kw_score = min(1.0, base_kw + name_match_boost + summary_match_boost 
+                                   + route_match_boost + content_match_boost + type_match_boost)
                 
-                # 3. Hybrid Combination
-                final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha))
-                if final_score > 0.01: # Threshold to filter noise
+                # 3. Line Number Matching
+                line_match_boost = 0.0
+                if query_line_numbers:
+                    start_line = chunk.get("start_line", 0)
+                    end_line = chunk.get("end_line", 0)
+                    if start_line or end_line:
+                        for ln in query_line_numbers:
+                            if start_line <= ln <= end_line:
+                                line_match_boost = 0.9  # Very strong: exact line match
+                                break
+                            elif abs(ln - start_line) <= 10 or abs(ln - end_line) <= 10:
+                                line_match_boost = max(line_match_boost, 0.4)  # Near match
+                
+                # 4. Hybrid Combination
+                final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha)) + line_match_boost
+                if final_score > 0.01:  # Threshold to filter noise
+                    # Filter out full content, keep only summary and metadata
+                    summary_chunk = {k: v for k, v in chunk.items() if k != "content"}
+                    
                     scored_chunks.append({
                         "file_path": file_path,
-                        "chunk": chunk,
+                        "chunk": summary_chunk,
                         "score": final_score,
                         "match_type": "hybrid",
                         "vector_score": vec_score,

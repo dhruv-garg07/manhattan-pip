@@ -126,27 +126,52 @@ class CodingMemoryBuilder:
     def _prepare_embedding_text(self, chunk: Dict[str, Any]) -> str:
         """
         Prepare the text to be embedded for a chunk.
-        Prefers 'summary' if available, otherwise 'content'.
-        Combines with 'keywords' for richer context.
+        Combines summary, content, keywords, and metadata for rich embedding.
+        
+        Strategy:
+        - Summary provides high-level semantic meaning
+        - Content snippet provides exact code patterns (decorators, function calls)
+        - Keywords provide searchable concepts
+        - Type/Name/Lines provide structural context
         """
+        import re
         text_parts = []
         
-        # 1. Summary or Content
-        if chunk.get("summary"):
-            text_parts.append(chunk["summary"])
-        elif chunk.get("content"):
-            content = chunk["content"]
-            text_parts.append(content[:1000])
-        
-        # 2. Keywords
-        keywords = chunk.get("keywords", [])
-        if keywords:
-            text_parts.append(f"Keywords: {', '.join(keywords)}")
-            
-        # 3. Name/Type
+        # 1. Name & Type header (important for direct name queries)
         name = chunk.get("name", "")
         type_ = chunk.get("type", "")
         if name or type_:
-            text_parts.append(f"Context: {type_} {name}")
+            text_parts.append(f"{type_} {name}".strip())
+        
+        # 2. Summary (primary semantic content)
+        if chunk.get("summary"):
+            text_parts.append(chunk["summary"])
+        
+        # 3. Content snippet (critical for exact pattern matching)
+        if chunk.get("content"):
+            content = chunk["content"]
+            # Include first 500 chars of content for exact pattern matches
+            text_parts.append(content[:500])
+            
+            # 4. Extract decorators & important patterns from content
+            decorators = re.findall(r'@\w+[\.\w]*(?:\([^)]*\))?', content)
+            if decorators:
+                text_parts.append(f"Decorators: {', '.join(decorators)}")
+            
+            # Extract HTTP methods from route decorators
+            methods_match = re.findall(r"methods\s*=\s*\[([^\]]+)\]", content)
+            if methods_match:
+                text_parts.append(f"HTTP methods: {', '.join(methods_match)}")
+        
+        # 5. Keywords
+        keywords = chunk.get("keywords", [])
+        if keywords:
+            text_parts.append(f"Keywords: {', '.join(keywords)}")
+        
+        # 6. Line range (for positional queries)
+        start_line = chunk.get("start_line", 0)
+        end_line = chunk.get("end_line", 0)
+        if start_line or end_line:
+            text_parts.append(f"Lines: {start_line}-{end_line}")
             
         return "\n".join(text_parts)
