@@ -282,17 +282,21 @@ class CodingAPI:
     
     def _ingest_file(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Shared logic for index_file and reindex_file."""
+        from .chunking_engine import detect_language
+        
+        # Detect language for VFS categorization
+        lang = detect_language(file_path)
+        
         if chunks is None:
             # Fallback to local AST parsing
             if not os.path.exists(file_path):
                 return {"status": "error", "message": f"File not found for auto-chunking: {file_path}"}
             
-            from .chunking_engine import ChunkingEngine, detect_language
+            from .chunking_engine import ChunkingEngine
             try:
                 with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                     content = f.read()
                 
-                lang = detect_language(file_path)
                 chunker = ChunkingEngine.get_chunker(lang)
                 code_chunks = chunker.chunk_file(content, file_path)
                 
@@ -310,5 +314,6 @@ class CodingAPI:
         return self.builder.process_file_chunks(
             agent_id=agent_id,
             file_path=file_path,
-            chunks=chunks
+            chunks=chunks,
+            language=lang,
         )
