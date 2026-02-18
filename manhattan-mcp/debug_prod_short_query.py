@@ -21,8 +21,8 @@ print(f"AGENT: {agent_id}")
 print("=" * 70)
 
 # Run the search via the full API
-print("\n--- Running api.get_flow() ---")
-result = api.get_flow(agent_id, query)
+print("\n--- Running api.get_mem() ---")
+result = api.get_mem(agent_id, query)
 
 if isinstance(result, str):
     try:

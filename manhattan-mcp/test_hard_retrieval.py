@@ -1,5 +1,5 @@
 """
-HARD Retrieval Test Suite for CodingAPI create_flow & get_flow
+HARD Retrieval Test Suite for CodingAPI create_mem & get_mem
 ================================================================
 Designed to expose weaknesses in:
   - Synonym/paraphrase handling
@@ -366,7 +366,7 @@ def run_all_tests(api):
             log.append(f"  Expected: {expected}")
             
             t = time.time()
-            result = api.get_flow(AGENT_ID, query)
+            result = api.get_mem(AGENT_ID, query)
             elapsed = time.time() - t
             
             v = verify(query, result, expected)
@@ -414,7 +414,7 @@ def run_all_tests(api):
 
 def main():
     print("=" * 70)
-    print("  HARD RETRIEVAL TEST — create_flow & get_flow")
+    print("  HARD RETRIEVAL TEST — create_mem & get_mem")
     print("=" * 70)
     
     # Clean
@@ -428,8 +428,8 @@ def main():
     # Create flow with 24 rich chunks
     print(f"\nStoring {len(HARD_CHUNKS)} chunks...")
     t = time.time()
-    result = api.create_flow(AGENT_ID, FILE_PATH, HARD_CHUNKS)
-    print(f"create_flow: {json.dumps(result)} ({time.time()-t:.1f}s)")
+    result = api.create_mem(AGENT_ID, FILE_PATH, HARD_CHUNKS)
+    print(f"create_mem: {json.dumps(result)} ({time.time()-t:.1f}s)")
     
     # Run hard tests
     print("\nRunning hard retrieval tests...\n")

@@ -1,9 +1,9 @@
 """
-Direct Test: create_flow & get_flow from CodingAPI
+Direct Test: create_mem & get_mem from CodingAPI
 ===================================================
 Tests the CodingAPI functions directly (no MCP layer) by:
 1. Storing large coding context from index.py as semantic chunks
-2. Retrieving them with various queries via get_flow
+2. Retrieving them with various queries via get_mem
 3. Running 5 iterative test loops, each with improved queries/validation
 4. AI-style verification of retrieval relevance
 """
@@ -348,7 +348,7 @@ def run_test_iteration(coding_api, iteration, log_lines):
         log_lines.append(f"  Expected: {expected_names}")
         
         start = time.time()
-        result = coding_api.get_flow(AGENT_ID, query)
+        result = coding_api.get_mem(AGENT_ID, query)
         elapsed = time.time() - start
         
         verdict = ai_verify_relevance(query, result, expected_names)
@@ -378,7 +378,7 @@ def main():
     log_lines = []
     
     log_lines.append("=" * 70)
-    log_lines.append("  DIRECT TEST: create_flow & get_flow from CodingAPI")
+    log_lines.append("  DIRECT TEST: create_mem & get_mem from CodingAPI")
     log_lines.append("  Testing with large coding context from index.py")
     log_lines.append("=" * 70)
     
@@ -394,23 +394,23 @@ def main():
     
     # STEP 1: Create Flow
     log_lines.append(f"\n{'='*70}")
-    log_lines.append(f"  STEP 1: create_flow - Storing {len(INDEX_PY_CHUNKS)} semantic chunks")
+    log_lines.append(f"  STEP 1: create_mem - Storing {len(INDEX_PY_CHUNKS)} semantic chunks")
     log_lines.append(f"{'='*70}")
     
     start = time.time()
-    create_result = coding_api.create_flow(
+    create_result = coding_api.create_mem(
         agent_id=AGENT_ID,
         file_path=FILE_PATH,
         chunks=INDEX_PY_CHUNKS
     )
     create_time = time.time() - start
     
-    log_lines.append(f"\ncreate_flow result: {json.dumps(create_result, indent=2)}")
+    log_lines.append(f"\ncreate_mem result: {json.dumps(create_result, indent=2)}")
     log_lines.append(f"Time: {create_time:.3f}s")
     
     status = create_result.get("status", "")
     if "error" in str(status).lower():
-        log_lines.append("CRITICAL: create_flow failed! Aborting tests.")
+        log_lines.append("CRITICAL: create_mem failed! Aborting tests.")
         # Write log and exit
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("\n".join(log_lines))
@@ -420,12 +420,12 @@ def main():
     chunks_stored = create_result.get("chunks_processed", create_result.get("total_chunks", 0))
     log_lines.append(f"Successfully stored {chunks_stored} chunks")
     
-    # STEP 2: Verify with list_flows
+    # STEP 2: Verify with list_mems
     log_lines.append(f"\n{'='*70}")
-    log_lines.append("  STEP 2: Verify via list_flows")
+    log_lines.append("  STEP 2: Verify via list_mems")
     log_lines.append(f"{'='*70}")
     
-    list_result = coding_api.list_flows(AGENT_ID)
+    list_result = coding_api.list_mems(AGENT_ID)
     log_lines.append(f"Stored flows: {json.dumps(list_result, indent=2)}")
     
     # STEP 3: Run 5 test iterations

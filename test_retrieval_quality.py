@@ -20,18 +20,18 @@ def test_retrieval():
     
     # Ingest the file
     print(f"Ingesting {FILE_PATH}...")
-    api.create_flow(AGENT_ID, FILE_PATH)
+    api.create_mem(AGENT_ID, FILE_PATH)
     
     print("\n--- Strategy 1: Path Retrieval (returns skeleton) ---")
-    result_path = api.get_flow(AGENT_ID, FILE_PATH)
-    # The return format of get_flow for path is store.retrieve_file_context
+    result_path = api.get_mem(AGENT_ID, FILE_PATH)
+    # The return format of get_mem for path is store.retrieve_file_context
     print(f"Status: {result_path.get('status')}")
     # print(json.dumps(result_path.get('code_flow'), indent=2)[:500] + "...")
     
     print("\n--- Strategy 2: Search Inquiry (returns chunks) ---")
     # Query for something specific in the file, e.g., "store_file_chunks"
     query = "How is store_file_chunks implemented?"
-    result_search = api.get_flow(AGENT_ID, query)
+    result_search = api.get_mem(AGENT_ID, query)
     
     # CodingHybridRetriever returns a dict with 'results' list
     matches = result_search.get('results', [])

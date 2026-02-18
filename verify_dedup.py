@@ -51,7 +51,7 @@ def verify():
         api.builder.embedding_client = mock_client
         
         print("\n--- Run 1: Initial Ingestion ---")
-        api.create_flow(AGENT_ID, FILE_PATH, chunks=None)
+        api.create_mem(AGENT_ID, FILE_PATH, chunks=None)
         
         count_run1 = mock_client.call_count
         print(f"Embedding Calls Run 1: {count_run1}")
@@ -71,7 +71,7 @@ def verify():
         api2.builder.embedding_client = mock_client # Same mock instance to track calls?
         # No, mock_client.call_count is local to the instance.
         
-        api2.create_flow(AGENT_ID, FILE_PATH, chunks=None)
+        api2.create_mem(AGENT_ID, FILE_PATH, chunks=None)
         
         count_run2 = mock_client.call_count
         print(f"Embedding Calls Run 2: {count_run2}")

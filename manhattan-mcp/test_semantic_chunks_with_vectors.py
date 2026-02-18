@@ -63,7 +63,7 @@ SEMANTIC_CHUNKS = [
 
 # 1. Create flow with pre-chunked semantic inputs
 print("\n[1] Creating flow with semantic chunks...")
-result = api.create_flow(AGENT_ID, FILE_PATH, chunks=SEMANTIC_CHUNKS)
+result = api.create_mem(AGENT_ID, FILE_PATH, chunks=SEMANTIC_CHUNKS)
 print(f"    Result keys: {list(result.keys())}")
 
 # 2. Verify vectors.json exists with entries
@@ -117,7 +117,7 @@ if os.path.exists(global_chunks_path):
 
 # 5. Test hybrid search retrieval (uses vectors from vectors.json)
 print("\n[5] Testing hybrid search (loads vectors from vectors.json)...")
-search_result = api.get_flow(AGENT_ID, "authentication login session")
+search_result = api.get_mem(AGENT_ID, "authentication login session")
 print(f"    Search status: {search_result.get('status')}")
 results = search_result.get("results", [])
 print(f"    Results count: {len(results)}")

@@ -71,12 +71,12 @@ SEMANTIC_CHUNKS = [
 
 # 1. Create flow with chunks
 print("\n[1] Creating flow with API key chunks...")
-result = api.create_flow(AGENT_ID, FILE_PATH, chunks=SEMANTIC_CHUNKS)
+result = api.create_mem(AGENT_ID, FILE_PATH, chunks=SEMANTIC_CHUNKS)
 print(f"    Created: {result.get('status')}")
 
 # 2. Test: Query with route-style token (the bug case)
 print("\n[2] Testing query: '/api/keys endpoint from index.py'...")
-search_result = api.get_flow(AGENT_ID, "/api/keys endpoint from index.py")
+search_result = api.get_mem(AGENT_ID, "/api/keys endpoint from index.py")
 print(f"    Status: {search_result.get('status')}")
 print(f"    Filter: {search_result.get('filter')}")
 print(f"    Query: {search_result.get('query')}")
@@ -94,7 +94,7 @@ print("    ✅ Route-style query returns correct results!")
 
 # 3. Test: File filter is correctly extracted for actual file paths  
 print("\n[3] Testing that index.py is correctly used as file filter...")
-search_result2 = api.get_flow(AGENT_ID, "authentication from index.py")
+search_result2 = api.get_mem(AGENT_ID, "authentication from index.py")
 print(f"    Filter: {search_result2.get('filter')}")
 assert search_result2.get("filter") is not None, "FAIL: index.py should be used as file filter!"
 assert "index.py" in search_result2.get("filter", ""), "FAIL: filter should contain 'index.py'"
@@ -102,7 +102,7 @@ print("    ✅ File path correctly extracted as filter!")
 
 # 4. Test: Route-only query (no file path in query)
 print("\n[4] Testing query: 'explain /api/keys'...")
-search_result3 = api.get_flow(AGENT_ID, "explain /api/keys")
+search_result3 = api.get_mem(AGENT_ID, "explain /api/keys")
 print(f"    Filter: {search_result3.get('filter')}")
 print(f"    Results count: {search_result3.get('count')}")
 assert search_result3.get("filter") is None, "FAIL: /api/keys should NOT be treated as file filter!"
@@ -111,7 +111,7 @@ print("    ✅ Route-only query works correctly!")
 
 # 5. Test: Query with just keywords (baseline)
 print("\n[5] Testing keyword query: 'api key management'...")
-search_result4 = api.get_flow(AGENT_ID, "api key management")
+search_result4 = api.get_mem(AGENT_ID, "api key management")
 print(f"    Results count: {search_result4.get('count')}")
 assert search_result4.get("count", 0) > 0, "FAIL: keyword query should return results!"
 top4 = search_result4["results"][0]["chunk"]

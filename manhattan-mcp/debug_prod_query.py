@@ -20,9 +20,9 @@ print(f"QUERY: {query}")
 print(f"AGENT: {agent_id}")
 print("=" * 70)
 
-# Run the search via the full API (get_flow calls retriever under the hood)
-print("\n--- Running api.get_flow() ---")
-result = api.get_flow(agent_id, query)
+# Run the search via the full API (get_mem calls retriever under the hood)
+print("\n--- Running api.get_mem() ---")
+result = api.get_mem(agent_id, query)
 print(f"Type: {type(result)}")
 if isinstance(result, str):
     try:

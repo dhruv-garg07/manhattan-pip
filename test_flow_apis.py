@@ -95,9 +95,9 @@ async def run_test():
     os.makedirs(ROOT_PATH)
     
     # 1. Create Flow
-    print("\n1. Calling create_flow for index.py...")
+    print("\n1. Calling create_mem for index.py...")
     chunks = create_manual_chunks()
-    result = api.create_flow(AGENT_ID, FILE_PATH, chunks)
+    result = api.create_mem(AGENT_ID, FILE_PATH, chunks)
     print(f"   Success: {result.get('status') == 'OK'}")
     print(f"   Context ID: {result.get('context_id')}")
     
@@ -109,10 +109,10 @@ async def run_test():
         "What is the real-time communication setup for the app?"
     ]
     
-    print("\n2. Testing get_flow with complex queries...")
+    print("\n2. Testing get_mem with complex queries...")
     for query in queries:
         print(f"\n   Query: '{query}'")
-        search_res = api.get_flow(AGENT_ID, query)
+        search_res = api.get_mem(AGENT_ID, query)
         top_results = search_res.get("results", [])
         
         if top_results:

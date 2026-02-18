@@ -361,7 +361,7 @@ class CodingContextStore:
             "file_path": normalized_path,
             "code_flow": json.loads(found.get("compact_skeleton", "{}")), 
             "storage_mode": found.get("storage_mode"),
-            "message": f"Code Flow retrieved. Status: {freshness_status}"
+            "message": f"Code Mem retrieved. Status: {freshness_status}"
         }
 
     # =========================================================================
@@ -371,8 +371,8 @@ class CodingContextStore:
     # search_chunks and search_code_flow have been moved to CodingHybridRetriever
     # to separate logic from storage mechanism.
 
-    def list_code_flows(self, agent_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
-        """List all stored code flow structures."""
+    def list_code_mems(self, agent_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """List all stored code mem structures."""
         contexts = self._load_agent_data(agent_id, "file_contexts")
         total = len(contexts)
         sliced = contexts[offset : offset + limit]
@@ -392,8 +392,8 @@ class CodingContextStore:
             "items": summaries
         }
 
-    def delete_code_flow(self, agent_id: str, file_path: str) -> bool:
-        """Delete a code flow entry."""
+    def delete_code_mem(self, agent_id: str, file_path: str) -> bool:
+        """Delete a code mem entry."""
         contexts = self._load_agent_data(agent_id, "file_contexts")
         normalized_path = os.path.normpath(file_path)
         
@@ -405,7 +405,6 @@ class CodingContextStore:
             self._remove_from_global_index(normalized_path)
             return True
         return False
-
 
     
     # =========================================================================

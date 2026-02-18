@@ -51,9 +51,9 @@ def verify():
         # Patch the embedding client on the builder instance
         api.builder.embedding_client = MockEmbeddingClient()
         
-        print("Calling create_flow with chunks=None...")
+        print("Calling create_mem with chunks=None...")
         # This triggers the new _read_and_chunk_file path
-        result = api.create_flow(AGENT_ID, FILE_PATH, chunks=None)
+        result = api.create_mem(AGENT_ID, FILE_PATH, chunks=None)
         
         print("Result:", json.dumps(result, indent=2))
         

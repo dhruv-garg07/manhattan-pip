@@ -1,15 +1,3 @@
-"""
-End-to-End Stress Test: Ingest real index.py → Test Retrieval Under Difficult Conditions
-
-This script:
-1. Ingests index.py with REALISTIC semantic chunks (as an AI agent would via MCP create_flow)
-2. Tests with DIFFICULT queries: vague, misspelled, multi-route, natural language, negation, etc.
-3. Prints diagnostic info for each test to help debug retrieval failures
-4. Iteratively identifies and reports weaknesses for improvement
-
-No MCP server needed — runs CodingAPI directly.
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
@@ -198,7 +186,7 @@ SEMANTIC_CHUNKS = [
     {
         "name": "list_api_keys",
         "type": "function",
-        "content": "@app.route('/api/keys', methods=['GET'])\n@login_required\ndef list_api_keys():\n    resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at').eq('user_id', current_user.id).execute()\n    return jsonify(keys)",
+        "content": "@app.route('/api/keys', methods=['GET'])\n@login_required\ndef list_api_keys():\n    resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at').eq('user__id', current_user.id).execute()\n    return jsonify(keys)",
         "summary": "GET endpoint to list user's masked API keys. Queries Supabase api_keys table filtered by user_id, returns masked key data.",
         "keywords": ["api", "keys", "list", "endpoint", "masking", "security", "api-keys", "management", "route"],
         "start_line": 1046, "end_line": 1061
@@ -292,7 +280,7 @@ print(f"\n{'─' * 70}")
 print("PHASE 1: Ingest index.py with semantic chunks")
 print(f"{'─' * 70}")
 
-result = api.create_flow(AGENT_ID, REAL_INDEX_FILE, chunks=SEMANTIC_CHUNKS)
+result = api.create_mem(AGENT_ID, REAL_INDEX_FILE, chunks=SEMANTIC_CHUNKS)
 print(f"  Ingested {len(SEMANTIC_CHUNKS)} semantic chunks")
 print(f"  Result: {result.get('message', result.get('status', 'unknown'))}")
 
@@ -320,7 +308,7 @@ print(f"{'─' * 70}")
 
 # 2a: Exact function name
 print("\n[2a] Query: 'login'")
-r = api.get_flow(AGENT_ID, "login")
+r = api.get_mem(AGENT_ID, "login")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -329,7 +317,7 @@ if results:
 
 # 2b: Exact class name
 print("\n[2b] Query: 'User class'")
-r = api.get_flow(AGENT_ID, "User class")
+r = api.get_mem(AGENT_ID, "User class")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -338,7 +326,7 @@ if results:
 
 # 2c: Simple keyword
 print("\n[2c] Query: 'health check endpoint'")
-r = api.get_flow(AGENT_ID, "health check endpoint")
+r = api.get_mem(AGENT_ID, "health check endpoint")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -355,7 +343,7 @@ print(f"{'─' * 70}")
 print(f"\n[3p] Query: '/api/keys' (Short route query)")
 # This was a specific user report where "/api/keys" was treated as a file filter
 # causing 0 results. It should NOT be a filter.
-r_3p = api.get_flow(AGENT_ID, "/api/keys")
+r_3p = api.get_mem(AGENT_ID, "/api/keys")
 show_results(r_3p)
 
 results_3p = r_3p.get("results", [])
@@ -368,7 +356,7 @@ print("  ✅ Short route query handled correctly (not a file filter)")
 
 # 3a: The exact bug case
 print("\n[3a] Query: \"/api/keys endpoint from index.py\"")
-r = api.get_flow(AGENT_ID, "/api/keys endpoint from index.py")
+r = api.get_mem(AGENT_ID, "/api/keys endpoint from index.py")
 show_results(r)
 test("Filter is index.py", r.get("filter") is not None and "index.py" in (r.get("filter") or ""))
 results = r.get("results", [])
@@ -381,7 +369,7 @@ if results:
 
 # 3b: Quoted route
 print("\n[3b] Query: \"Can you explain the '/api/keys' endpoint?\"")
-r = api.get_flow(AGENT_ID, "Can you explain the '/api/keys' endpoint?")
+r = api.get_mem(AGENT_ID, "Can you explain the '/api/keys' endpoint?")
 show_results(r)
 test("No file filter (route not mistaken for file)",
      r.get("filter") is None,
@@ -391,7 +379,7 @@ test("Returns results", len(results) > 0)
 
 # 3c: Route with parameters
 print("\n[3c] Query: \"/api/keys/<key_id> DELETE\"")
-r = api.get_flow(AGENT_ID, "/api/keys/<key_id> DELETE")
+r = api.get_mem(AGENT_ID, "/api/keys/<key_id> DELETE")
 show_results(r)
 test("No file filter", r.get("filter") is None)
 results = r.get("results", [])
@@ -404,7 +392,7 @@ if results:
 
 # 3d: Multiple routes in query
 print("\n[3d] Query: \"/login and /register routes\"")
-r = api.get_flow(AGENT_ID, "/login and /register routes")
+r = api.get_mem(AGENT_ID, "/login and /register routes")
 show_results(r)
 test("No file filter", r.get("filter") is None)
 results = r.get("results", [])
@@ -419,7 +407,7 @@ if results:
 
 # 3e: Deep nested route
 print("\n[3e] Query: \"/auth/github/verify endpoint\"")
-r = api.get_flow(AGENT_ID, "/auth/github/verify endpoint")
+r = api.get_mem(AGENT_ID, "/auth/github/verify endpoint")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -438,7 +426,7 @@ print(f"{'─' * 70}")
 
 # 4a: Very vague
 print("\n[4a] Query: \"how does authentication work\"")
-r = api.get_flow(AGENT_ID, "how does authentication work")
+r = api.get_mem(AGENT_ID, "how does authentication work")
 show_results(r, top_n=5)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -451,7 +439,7 @@ if results:
 
 # 4b: Conceptual query
 print("\n[4b] Query: \"where is the database connection configured\"")
-r = api.get_flow(AGENT_ID, "where is the database connection configured")
+r = api.get_mem(AGENT_ID, "where is the database connection configured")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -464,7 +452,7 @@ if results:
 
 # 4c: Action-oriented query
 print("\n[4c] Query: \"how to upload files\"")
-r = api.get_flow(AGENT_ID, "how to upload files")
+r = api.get_mem(AGENT_ID, "how to upload files")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -476,7 +464,7 @@ if results:
 
 # 4d: Question about a specific feature
 print("\n[4d] Query: \"what happens when a user signs up\"")
-r = api.get_flow(AGENT_ID, "what happens when a user signs up")
+r = api.get_mem(AGENT_ID, "what happens when a user signs up")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -495,31 +483,31 @@ print(f"{'─' * 70}")
 
 # 5a: Single character query
 print("\n[5a] Query: \"a\"")
-r = api.get_flow(AGENT_ID, "a")
+r = api.get_mem(AGENT_ID, "a")
 test("Single char query doesn't crash", r.get("status") == "search_results")
 
 # 5b: Empty-ish query (all stop words)
 print("\n[5b] Query: \"the is a an and or\"")
-r = api.get_flow(AGENT_ID, "the is a an and or")
+r = api.get_mem(AGENT_ID, "the is a an and or")
 test("All-stopwords query doesn't crash", r.get("status") == "search_results")
 
 # 5c: Very long query
 long_query = "I need to understand the complete authentication flow including login registration OAuth Google GitHub callback handling token verification session management and password validation"
 print(f"\n[5c] Long query ({len(long_query)} chars)")
-r = api.get_flow(AGENT_ID, long_query)
+r = api.get_mem(AGENT_ID, long_query)
 show_results(r)
 test("Long query returns results", r.get("count", 0) > 0)
 
 # 5d: Query with special characters
 print("\n[5d] Query: \"@app.route('/api/keys') decorator\"")
-r = api.get_flow(AGENT_ID, "@app.route('/api/keys') decorator")
+r = api.get_mem(AGENT_ID, "@app.route('/api/keys') decorator")
 show_results(r)
 results = r.get("results", [])
 test("Special chars query returns results", len(results) > 0)
 
 # 5e: CamelCase and mixed case
 print("\n[5e] Query: \"SocketIO WebSocket initialization\"")
-r = api.get_flow(AGENT_ID, "SocketIO WebSocket initialization")
+r = api.get_mem(AGENT_ID, "SocketIO WebSocket initialization")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -531,7 +519,7 @@ if results:
 
 # 5f: Abbreviation / shorthand
 print("\n[5f] Query: \"oauth flow\"")
-r = api.get_flow(AGENT_ID, "oauth flow")
+r = api.get_mem(AGENT_ID, "oauth flow")
 show_results(r)
 results = r.get("results", [])
 test("Returns results for oauth", len(results) > 0)
@@ -544,12 +532,12 @@ if results:
 
 # 5g: Negative/exclusion-style query (retrieval doesn't support NOT, but shouldn't crash)
 print("\n[5g] Query: \"everything except authentication\"")
-r = api.get_flow(AGENT_ID, "everything except authentication")
+r = api.get_mem(AGENT_ID, "everything except authentication")
 test("Negative-style query doesn't crash", r.get("status") == "search_results")
 
 # 5h: Query specifically about error handling
 print("\n[5h] Query: \"error handling 404 500\"")
-r = api.get_flow(AGENT_ID, "error handling 404 500")
+r = api.get_mem(AGENT_ID, "error handling 404 500")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -561,14 +549,14 @@ if results:
 
 # 5i: Query about Supabase interactions
 print("\n[5i] Query: \"supabase database operations\"")
-r = api.get_flow(AGENT_ID, "supabase database operations")
+r = api.get_mem(AGENT_ID, "supabase database operations")
 show_results(r, top_n=5)
 results = r.get("results", [])
 test("Returns results about supabase", len(results) > 0)
 
 # 5j: Agent execution flow
 print("\n[5j] Query: \"how to run execute agent\"")
-r = api.get_flow(AGENT_ID, "how to run execute agent")
+r = api.get_mem(AGENT_ID, "how to run execute agent")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -587,7 +575,7 @@ print(f"{'─' * 70}")
 
 # 6a: "api" should return API-related chunks, not "api_agents" mixed with "api_keys"
 print("\n[6a] Query: \"api key management security\"")
-r = api.get_flow(AGENT_ID, "api key management security")
+r = api.get_mem(AGENT_ID, "api key management security")
 show_results(r, top_n=5)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -599,7 +587,7 @@ if results:
 
 # 6b: Specificity test — "gevent" should return the gevent chunk, not everything
 print("\n[6b] Query: \"gevent monkey patching\"")
-r = api.get_flow(AGENT_ID, "gevent monkey patching")
+r = api.get_mem(AGENT_ID, "gevent monkey patching")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -610,7 +598,7 @@ if results:
 
 # 6c: Ranking: exact name match should beat keyword overlap
 print("\n[6c] Query: \"register\"")
-r = api.get_flow(AGENT_ID, "register")
+r = api.get_mem(AGENT_ID, "register")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)
@@ -621,7 +609,7 @@ if results:
 
 # 6d: Ranking: route pattern match should boost correctly
 print("\n[6d] Query: \"/run-agent endpoint\"")
-r = api.get_flow(AGENT_ID, "/run-agent endpoint")
+r = api.get_mem(AGENT_ID, "/run-agent endpoint")
 show_results(r)
 results = r.get("results", [])
 test("Returns results", len(results) > 0)

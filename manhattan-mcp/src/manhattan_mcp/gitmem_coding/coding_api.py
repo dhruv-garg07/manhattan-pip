@@ -1,8 +1,8 @@
 """
 GitMem Coding - Coding Context API
 
-Simplified High-level API for code flow management.
-Provides exactly 4 CRUD operations to manage the Code Flow structure.
+Simplified High-level API for code memory management.
+Provides exactly 4 CRUD operations to manage the Code Mem structure.
 """
 
 from typing import Dict, Any, List
@@ -17,10 +17,10 @@ class CodingAPI:
     High-level API for coding context storage.
     
     Exposes only 4 core CRUD operations:
-    1. create_flow(file_path)
-    2. get_flow(query)
-    3. update_flow(file_path)
-    4. delete_flow(file_path)
+    1. create_mem(file_path)
+    2. get_mem(query)
+    3. update_mem(file_path)
+    4. delete_mem(file_path)
     """
     
     def __init__(self, root_path: str = "./.gitmem_coding"):
@@ -31,9 +31,9 @@ class CodingAPI:
         self.retriever = CodingHybridRetriever(self.store, self.vector_store)
     
     # 1. Create
-    def create_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def create_mem(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Create a Code Flow structure for a file.
+        Create a Code Mem structure for a file.
         If chunks are not provided, falls back to local AST parsing.
         """
         if chunks is None:
@@ -69,9 +69,9 @@ class CodingAPI:
         )
 
     # 2. Read (Query or ID)
-    def get_flow(self, agent_id: str, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def get_mem(self, agent_id: str, query: str, top_k: int = 5) -> Dict[str, Any]:
         """
-        Retrieve Code Flow/Context based on query.
+        Retrieve Code Mem/Context based on query.
         
         Performs a hybrid search on chunks.
         """
@@ -81,9 +81,9 @@ class CodingAPI:
         return results
 
     # 3. Update
-    def update_flow(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def update_mem(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Update the Code Flow for a file.
+        Update the Code Mem for a file.
         If chunks are not provided, falls back to local AST parsing.
         """
         if chunks is None:
@@ -119,13 +119,13 @@ class CodingAPI:
         )
     
     # 4. Delete
-    def delete_flow(self, agent_id: str, file_path: str) -> bool:
+    def delete_mem(self, agent_id: str, file_path: str) -> bool:
         """
-        Delete the Code Flow for a file.
+        Delete the Code Mem for a file.
         """
-        return self.store.delete_code_flow(agent_id, file_path)
+        return self.store.delete_code_mem(agent_id, file_path)
 
     # Additional utility (optional, for listing)
-    def list_flows(self, agent_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
-        """List all stored code flows."""
-        return self.store.list_code_flows(agent_id, limit, offset)
+    def list_mems(self, agent_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """List all stored code mems."""
+        return self.store.list_code_mems(agent_id, limit, offset)

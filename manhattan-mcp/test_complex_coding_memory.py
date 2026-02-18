@@ -85,13 +85,13 @@ def test_scenario_1_ingestion(api):
     ]
 
     print("  1. Ingesting File A...")
-    api.create_flow(AGENT_ID, file_a, chunks_a)
+    api.create_mem(AGENT_ID, file_a, chunks_a)
     
     # Vector count should be 2
     verify_vectors_count(api, AGENT_ID, 2, "After File A")
 
     print("  2. Ingesting File B (with 1 duplicate content chunk)...")
-    api.create_flow(AGENT_ID, file_b, chunks_b)
+    api.create_mem(AGENT_ID, file_b, chunks_b)
     
     # Vector count should be 3 (2 from A + 1 unique from B). The duplicate shared_logging should reuse vector.
     # Wait, hash is based on content. If content is identical, hash is identical.
@@ -127,7 +127,7 @@ def test_scenario_2_updates(api):
     ]
     
     print("  1. Updating File A with changed ConfigLoader...")
-    api.update_flow(AGENT_ID, file_a, new_chunks_a)
+    api.update_mem(AGENT_ID, file_a, new_chunks_a)
     
     # Vectors:
     # - shared_logging (hash X) - Reused (exists)
@@ -147,7 +147,7 @@ def test_scenario_3_search(api):
     # Query: "logging"
     # Should match 'shared_logging' strongly via keyword and vector
     print("  1. Searching for 'logging'...")
-    res = api.get_flow(AGENT_ID, "logging mechanism")
+    res = api.get_mem(AGENT_ID, "logging mechanism")
     results = res.get("results", [])
     
     print(f"    Found {len(results)} matches.")
@@ -174,7 +174,7 @@ def test_scenario_4_persistence():
     verify_vectors_count(new_api, AGENT_ID, 4, "After Reload")
     
     # Check if we can still search
-    res = new_api.get_flow(AGENT_ID, "process data")
+    res = new_api.get_mem(AGENT_ID, "process data")
     results = res.get("results", [])
     assert len(results) > 0, "Search failed after reload"
     assert results[0]['chunk']['name'] == "process_data", "Incorrect top result after reload"

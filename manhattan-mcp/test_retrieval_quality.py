@@ -1,7 +1,7 @@
 """
 Comprehensive Retrieval Quality Test
 
-Tests the create_flow and get_flow pipeline with complex, realistic queries.
+Tests the create_mem and get_mem pipeline with complex, realistic queries.
 Validates that the hybrid retriever returns relevant, well-scored results.
 """
 import sys
@@ -124,7 +124,7 @@ def main():
         },
     ]
 
-    result = api.create_flow(AGENT_ID, "/app/src/auth_manager.py", chunks)
+    result = api.create_mem(AGENT_ID, "/app/src/auth_manager.py", chunks)
     print(f"  Ingested: {result}")
     
     # Verify vectors
@@ -143,7 +143,7 @@ def main():
 
     # Test 1: Direct concept query
     total += 1
-    res = api.get_flow(AGENT_ID, "How does the system handle password reset when a user forgets their password?")
+    res = api.get_mem(AGENT_ID, "How does the system handle password reset when a user forgets their password?")
     if print_result(
         "How does the system handle password reset when a user forgets their password?",
         res["results"], expected_top_name="reset_password"
@@ -152,7 +152,7 @@ def main():
 
     # Test 2: Indirect concept query (no keyword "rate" in query)
     total += 1
-    res = api.get_flow(AGENT_ID, "What protects API endpoints from being overwhelmed by too many requests?")
+    res = api.get_mem(AGENT_ID, "What protects API endpoints from being overwhelmed by too many requests?")
     if print_result(
         "What protects API endpoints from being overwhelmed by too many requests?",
         res["results"], expected_top_name="RateLimiter"
@@ -161,7 +161,7 @@ def main():
 
     # Test 3: Schema management
     total += 1
-    res = api.get_flow(AGENT_ID, "How are database schema changes managed and versioned?")
+    res = api.get_mem(AGENT_ID, "How are database schema changes managed and versioned?")
     if print_result(
         "How are database schema changes managed and versioned?",
         res["results"], expected_top_name="DatabaseMigration"
@@ -170,7 +170,7 @@ def main():
 
     # Test 4: Token expiry
     total += 1
-    res = api.get_flow(AGENT_ID, "What happens when a JWT token expires and the user needs a new one?")
+    res = api.get_mem(AGENT_ID, "What happens when a JWT token expires and the user needs a new one?")
     if print_result(
         "What happens when a JWT token expires and the user needs a new one?",
         res["results"], expected_top_name="refresh_token"
@@ -179,7 +179,7 @@ def main():
 
     # Test 5: Broad security query (should return multiple results)
     total += 1
-    res = api.get_flow(AGENT_ID, "Show me all the security related code", top_k=8)
+    res = api.get_mem(AGENT_ID, "Show me all the security related code", top_k=8)
     ok = print_result(
         "Show me all the security related code",
         res["results"], expected_min_count=3
@@ -189,7 +189,7 @@ def main():
 
     # Test 6: Memoization (synonym matching)
     total += 1
-    res = api.get_flow(AGENT_ID, "How do I add memoization to improve performance of expensive function calls?")
+    res = api.get_mem(AGENT_ID, "How do I add memoization to improve performance of expensive function calls?")
     if print_result(
         "How do I add memoization to improve performance of expensive function calls?",
         res["results"], expected_top_name="cache_result"
@@ -198,7 +198,7 @@ def main():
 
     # Test 7: DB table interaction
     total += 1
-    res = api.get_flow(AGENT_ID, "Which functions interact with the users table in the database?")
+    res = api.get_mem(AGENT_ID, "Which functions interact with the users table in the database?")
     ok = print_result(
         "Which functions interact with the users table in the database?",
         res["results"], expected_min_count=2
@@ -215,7 +215,7 @@ def main():
 
     # Test 8: Specific symbol query
     total += 1
-    res = api.get_flow(AGENT_ID, "How is bcrypt used in the codebase?")
+    res = api.get_mem(AGENT_ID, "How is bcrypt used in the codebase?")
     if print_result(
         "How is bcrypt used in the codebase?",
         res["results"], expected_top_name="login"
@@ -224,7 +224,7 @@ def main():
 
     # Test 9: Line number query (should prefer tight ranges)
     total += 1
-    res = api.get_flow(AGENT_ID, "What code is around line 30?")
+    res = api.get_mem(AGENT_ID, "What code is around line 30?")
     results = res["results"]
     if results:
         top_name = results[0]["chunk"]["name"]
@@ -239,7 +239,7 @@ def main():
 
     # Test 10: Parent-child relationship query
     total += 1
-    res = api.get_flow(AGENT_ID, "What methods does AuthManager have?")
+    res = api.get_mem(AGENT_ID, "What methods does AuthManager have?")
     ok = print_result(
         "What methods does AuthManager have?",
         res["results"], expected_min_count=3

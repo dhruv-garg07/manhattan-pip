@@ -34,10 +34,10 @@ def test_optimization():
     api = CodingAPI(root_path=TEST_DIR)
     
     print(f"Creating flow for {FILE_A}...")
-    api.create_flow(AGENT_ID, os.path.abspath(FILE_A))
+    api.create_mem(AGENT_ID, os.path.abspath(FILE_A))
     
     print(f"Creating flow for {FILE_B}...")
-    api.create_flow(AGENT_ID, os.path.abspath(FILE_B))
+    api.create_mem(AGENT_ID, os.path.abspath(FILE_B))
     
     # Verify Global Index exists
     index_path = os.path.join(TEST_DIR, "index", "global_index.json")
@@ -57,21 +57,21 @@ def test_optimization():
             print("FAIL: common_func not correctly indexed")
 
     # Verify Search / Get Flow
-    print("\nTesting get_flow with symbol 'func_a_unique'...")
-    res_a = api.get_flow(AGENT_ID, "func_a_unique")
+    print("\nTesting get_mem with symbol 'func_a_unique'...")
+    res_a = api.get_mem(AGENT_ID, "func_a_unique")
     print("Result A:", res_a.get("count"), "matches")
     if res_a.get("count") != 1:
         print("FAIL: Expected 1 match for func_a_unique")
         
-    print("\nTesting get_flow with symbol 'common_func'...")
-    res_common = api.get_flow(AGENT_ID, "common_func")
+    print("\nTesting get_mem with symbol 'common_func'...")
+    res_common = api.get_mem(AGENT_ID, "common_func")
     print("Result Common:", res_common.get("count"), "matches")
     if res_common.get("count") != 2:
         print("FAIL: Expected 2 matches for common_func")
 
     # Verify Cleanup on Delete
     print(f"\nDeleting flow for {FILE_A}...")
-    api.delete_flow(AGENT_ID, os.path.abspath(FILE_A))
+    api.delete_mem(AGENT_ID, os.path.abspath(FILE_A))
     
     with open(index_path, "r") as f:
         index = json.load(f)
