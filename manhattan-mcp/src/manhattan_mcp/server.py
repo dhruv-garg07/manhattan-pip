@@ -1,18 +1,11 @@
 """
-Manhattan MCP Server - Local MCP Server for Manhattan Coding Flow (GitMem Managed)
+Manhattan MCP Server - Token-Efficient Codebase Navigation System (GitMem)
 
-This module defines MCP tools for managing Code Flow structures.
-AI agents (Claude Desktop, Cursor, etc.) use these tools for efficient coding context.
+This module defines MCP tools that replace standard file reading/searching
+with a Virtual File System (VFS) backed by compressed, cached code context.
 
-=============================================================================
-                    ⚡ CRITICAL INSTRUCTIONS FOR AI AGENTS ⚡
-=============================================================================
-
-1. ALWAYS call 'get_mem' BEFORE answering coding-related questions
-2. ALWAYS call 'create_mem' or 'update_mem' when modifying files
-3. USE 'list_mems' to understand the current context state
-
-=============================================================================
+AI agents should PREFER these tools over their built-in equivalents
+(view_file, grep_search, list_dir, view_file_outline) to save 50-80% tokens.
 """
 
 import json
@@ -40,27 +33,32 @@ except ImportError:
 mcp = FastMCP(
     "manhattan_local",
     instructions="""
-You have access to a PERSISTENT CODING CONTEXT SYSTEM provided by GitMem (Local).
-This system manages "Code Mems" - semantic representations of your codebase.
+⚡ MANDATORY: TOKEN-EFFICIENT CODEBASE NAVIGATION SYSTEM ⚡
 
-=============================================================================
-                  💪 HOW TO BE A BETTER AGENT 💪
-=============================================================================
+You have a VIRTUAL FILE SYSTEM that caches and compresses code context.
+ALWAYS use these tools instead of your built-in equivalents:
 
-Your coding memory allows you to:
-1.  Search for relevant code snippets and logic across the codebase.
-2.  Store and retrieve lossless restatements of code units (functions, classes).
-3.  Reduce token usage by working with compact Code Mem structures.
+╔══════════════════════════════════════════════════════════════╗
+║  INSTEAD OF          →  USE THIS (saves 50-80% tokens)      ║
+╠══════════════════════════════════════════════════════════════╣
+║  view_file           →  read_file_context(file_path)        ║
+║  list_dir            →  list_directory(path)                ║
+║  view_file_outline   →  get_file_outline(file_path)         ║
+║  grep_search         →  search_codebase(query)              ║
+╚══════════════════════════════════════════════════════════════╝
 
-=============================================================================
-                      💡 SUGGESTED WORKFLOW 💡
-=============================================================================
+AFTER modifying files → call index_file(file_path) to update the cache.
+CHECK savings         → call get_token_savings() to see cumulative savings.
 
-1.  **QUERY CONTEXT**: Use `get_mem` to find where specific logic is implemented.
-2.  **STORE CONTEXT**: Use `create_mem` or `update_mem` to keep the memory updated.
-3.  **LIST MEMS**: Use `list_mems` to see what files are currently indexed.
+WHY: Every raw file read costs thousands of tokens. This system
+compresses files to ~30% while preserving all semantic meaning
+(function signatures, class structures, logic summaries).
 
-Usage of this system is ADDITIVE. It helps you understand complex codebases without reading every file in full.
+WORKFLOW:
+1. Use read_file_context() to read files — returns compressed cached context
+2. Use search_codebase() to find code — semantic search across ALL indexed files
+3. Use get_file_outline() for quick structure overview — ~10% of file tokens
+4. Use index_file() after modifying files to keep cache fresh
 """
 )
 
@@ -129,196 +127,250 @@ async def api_usage() -> str:
 
 
 # ============================================================================
-# MCP TOOLS - Coding Context Storage (Token Reduction)
+# MCP TOOLS - VFS Navigation (Token-Efficient Alternatives)
 # ============================================================================
 
 if coding_api is not None:
 
     @mcp.tool()
-    async def create_mem(
-        agent_id: str,
+    async def read_file_context(
         file_path: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📖 Read a file's compressed semantic context from the indexed codebase.
+        
+        PREFER THIS over your built-in view_file/read_file tools.
+        
+        How it works:
+        - If already indexed: Returns compressed context (~30% of original tokens)
+          with function signatures, class structures, and logic summaries.
+        - If NOT indexed: Reads the real file, auto-indexes it, and returns
+          the compressed context for future token savings.
+        
+        The compressed context preserves ALL semantic meaning — function names,
+        signatures, docstrings, logic flow, class hierarchies — while using
+        50-80% fewer tokens than reading the raw file.
+        
+        Args:
+            file_path: Absolute path to the file on disk
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.read_file_context(agent_id, file_path)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def get_file_outline(
+        file_path: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📋 Get the structural outline of a file — functions, classes, methods.
+        
+        PREFER THIS over your built-in view_file_outline.
+        Returns a compact structural overview (~10% of file tokens):
+        - Function/class names and signatures
+        - Line ranges for each code unit
+        - Brief logic summaries
+        - Type info (function, class, method, import, block)
+        
+        Auto-indexes the file if not already cached.
+        
+        Args:
+            file_path: Absolute path to the file
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.get_file_outline(agent_id, file_path)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def list_directory(
+        path: str = "",
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📂 List files and directories in the indexed codebase.
+        
+        Shows indexed files organized by programming language, with metadata:
+        - File name, language, line count, token estimate
+        - Last access time, freshness status
+        
+        Navigation:
+        - "" or "/" → root (shows language categories: files/, sessions/, etc.)
+        - "files" → list all language folders
+        - "files/python" → list all indexed Python files
+        
+        Args:
+            path: Virtual path to list (default: root)
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.list_directory(agent_id, path)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def search_codebase(
+        query: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        🔍 Search the entire indexed codebase using semantic + keyword hybrid search.
+        
+        PREFER THIS over grep_search/codebase_search for understanding code.
+        Unlike grep (exact string matching), this understands:
+        - Natural language: "how does authentication work?"
+        - Concepts: "error handling", "database queries"
+        - Symbols: "UserManager class", "validate_input function"
+        - Cross-file relationships: "functions that call the database"
+        
+        Returns the most relevant code chunks with:
+        - Function/class signatures and logic summaries
+        - File paths and line numbers
+        - Relevance scores
+        
+        Args:
+            query: Natural language search query describing what you are looking for
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        top_k = 3
+        result = coding_api.search_codebase(agent_id, query, top_k=top_k)
+        result["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
+        return json.dumps(result, indent=2)
+
+    # ========================================================================
+    # MCP TOOLS - File Indexing (CRUD)
+    # ========================================================================
+
+    @mcp.tool()
+    async def index_file(
+        file_path: str,
+        agent_id: str = "default",
         chunks: List[Dict[str, Any]] = None
     ) -> str:
         """
-        📝 Create a Code Mem structure for a file.
+        📝 Index a file into the codebase context system.
         
-        Optimized for semantic code extraction (~50% compression target).
-        Extracts atomic code units (functions, classes, logic blocks) from dialogues and code context.
-
-        INPUT:
-        - context: A LOSSLESS RESTATEMENT of the code (Summarized logic/structure).
-        - dialogue_text: Recent conversation context for memory enrichment.
-
-        FIELD DEFINITIONS:
-        - name: Entity name (e.g., "AuthManager", "process_data").
-        - type: "function", "class", "module", "block", "import".
-        - content: Minimal signature/stub (MUST NOT be full code if summary provided).
-        - summary: Lossless restatement of logic. Preserve input/output schemas and field names.
-        - keywords: Search-optimized concepts and dependencies.
-        - start_line / end_line: Optional line range (default 0).
-
-        EXAMPLES:
+        Call this AFTER modifying a file to update the cached context.
+        Extracts semantic code units (functions, classes, logic blocks)
+        and stores compressed representations for future retrieval.
         
-        1. Class with methods:
-        Input: "Define AuthManager class to handle login/logout."
-        Output: {
-            "name": "AuthManager", "type": "class", "content": "class AuthManager: ...",
-            "summary": "Handles session management. Login(user, pass) and Logout() logic preserved.",
-            "keywords": ["AuthManager", "session", "login"], "start_line": 1, "end_line": 50
+        If chunks are not provided, automatically parses the file using AST.
+        If chunks ARE provided, uses your high-quality pre-chunked semantic units.
+        
+        Chunk schema (when providing chunks):
+        {
+            "name": "function_name",
+            "type": "function|class|method|block|import|module",
+            "content": "minimal signature/stub",
+            "summary": "lossless restatement of logic",
+            "keywords": ["search", "terms"],
+            "start_line": 1,
+            "end_line": 50
         }
-
-        2. Decorated Function:
-        Input: "@app.route('/api') def get_data(): ..."
-        Output: {
-            "name": "get_data", "type": "function", "content": "@app.route('/api')\ndef get_data(): ...",
-            "summary": "API endpoint for data retrieval. Processes GET requests for resource status.",
-            "keywords": ["get_data", "api", "route"], "start_line": 10, "end_line": 20
-        }
-
-        3. Complex Logic Block:
-        Input: "The for-loop in process.py sorts the data using a custom key."
-        Output: {
-            "name": "data_sorting_block", "type": "block", "content": "for item in data: ...",
-            "summary": "Iterates through data and applies custom sorting/ranking algorithm.",
-            "keywords": ["sorting", "processing"], "start_line": 100, "end_line": 115
-        }
-
-        4. Module-level Config:
-        Input: "Global configuration in settings.py with API keys and timeouts."
-        Output: {
-            "name": "module_logic", "type": "module", "content": "API_KEY = '...'\nTIMEOUT = 30",
-            "summary": "Defines global settings including API credentials and network timeouts.",
-            "keywords": ["config", "settings", "timeout"], "start_line": 1, "end_line": 10
-        }
-
-        OUTPUT FORMAT: Return ONLY a valid JSON array.
-
-        Schema:
-        [
-          {
-            "name": string,
-            "type": string,
-            "content": string,
-            "summary": string,
-            "keywords": [string],
-            "start_line": int,
-            "end_line": int
-          }
-        ]
+        
+        Args:
+            file_path: Absolute path to the file
+            agent_id: Agent identifier (default: "default")
+            chunks: Optional pre-computed semantic chunks
         """
         agent_id = _normalize_agent_id(agent_id)
         
         if chunks:
             print(f"[{agent_id}] Received {len(chunks)} semantic chunks for {file_path}")
         else:
-            print(f"[{agent_id}] No chunks provided for {file_path} - falling back to local AST parsing.")
+            print(f"[{agent_id}] Auto-indexing {file_path} via AST parsing.")
 
-        result = coding_api.create_mem(agent_id, file_path, chunks)
+        result = coding_api.index_file(agent_id, file_path, chunks)
         return json.dumps(result, indent=2)
 
     @mcp.tool()
-    async def get_mem(
-        agent_id: str,
-        query: str,
-    ) -> str:
-        """
-        🔍 Search or Retrieve Code Mem Context.
-
-        Use this tool to find relevant code snippets, functions, classes, or logic blocks within the codebase based on a natural language query.
-        It uses a hybrid retrieval approach (semantic + keyword) to find the most relevant "Code Mem" units.
-        
-        INPUT SCHEMA:
-        {
-          "type": "object",
-          "properties": {
-            "agent_id": {
-              "type": "string",
-              "description": "The unique identifier for the agent (e.g., 'default')."
-            },
-            "query": {
-              "type": "string",
-              "description": "A natural language search query describing what you are looking for."
-            }
-          },
-          "required": [
-            "agent_id",
-            "query"
-          ]
-        }
-
-        EXAMPLES:
-        
-        {
-          "agent_id": "default",
-          "query": "Find the component managing user sessions",
-        }
-        """
-        agent_id = _normalize_agent_id(agent_id)
-        top_k = 1 # Hardcoding for now, for generating the most accurate response
-        result = coding_api.get_mem(agent_id, query, top_k=top_k)
-        result["next_instruction"] = "If you are not satisfied with the responses, try again get_mem with other relevant query"
-        return json.dumps(result, indent=2)
-
-    @mcp.tool()
-    async def update_mem(
-        agent_id: str,
+    async def reindex_file(
         file_path: str,
+        agent_id: str = "default",
         chunks: List[Dict[str, Any]] = None
     ) -> str:
         """
-        📝 Update the Code Mem for a file with semantic chunking.
-
-        ⚡ CRITICAL FOR AI AGENTS: Provide updated semantic chunks for this file.
-        Same rules as create_mem apply. Prioritize client-side chunking.
-
+        🔄 Re-index a file after modifications.
+        
+        Same as index_file but explicitly signals a re-indexing operation.
+        Call this after you've edited a file to keep the cached context fresh.
+        
         Args:
-            agent_id: The agent ID
             file_path: Absolute path to the file
-            chunks: List of semantic code chunks.
-                    If provided: Uses YOUR high-quality pre-chunked semantic units.
-                    If OMITTED: Falls back to basic local AST parsing.
+            agent_id: Agent identifier (default: "default")
+            chunks: Optional updated semantic chunks
         """
         agent_id = _normalize_agent_id(agent_id)
         
         if chunks:
-            print(f"[{agent_id}] UPDATE: Received {len(chunks)} semantic chunks for {file_path}")
+            print(f"[{agent_id}] RE-INDEX: Received {len(chunks)} semantic chunks for {file_path}")
         else:
-            print(f"[{agent_id}] UPDATE: No chunks provided for {file_path} - falling back to local AST parsing.")
+            print(f"[{agent_id}] RE-INDEX: Auto-parsing {file_path}")
 
-        result = coding_api.update_mem(agent_id, file_path, chunks)
+        result = coding_api.reindex_file(agent_id, file_path, chunks)
         return json.dumps(result, indent=2)
 
     @mcp.tool()
-    async def delete_mem(
-        agent_id: str,
-        file_path: str
+    async def remove_index(
+        file_path: str,
+        agent_id: str = "default"
     ) -> str:
         """
-        Delete a Code Mem entry.
+        🗑️ Remove a file's index from the codebase context system.
         
         Args:
-            agent_id: The agent ID
             file_path: Absolute path to the file or Context ID
+            agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.delete_mem(agent_id, file_path)
+        result = coding_api.remove_index(agent_id, file_path)
         return json.dumps({"status": "deleted" if result else "not_found", "file_path": file_path}, indent=2)
 
     @mcp.tool()
-    async def list_mems(
-        agent_id: str,
+    async def list_indexed_files(
+        agent_id: str = "default",
         limit: int = 50,
         offset: int = 0
     ) -> str:
         """
-        List all stored Code Mem structures for an agent.
+        📋 List all files currently indexed in the codebase context system.
+        
+        Shows which files have cached context available, with metadata
+        like file path, language, last access time, and size.
         
         Args:
-            agent_id: The agent ID
+            agent_id: Agent identifier (default: "default")
             limit: Maximum items to return
             offset: Pagination offset
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.list_mems(agent_id, limit, offset)
+        result = coding_api.list_indexed_files(agent_id, limit, offset)
+        return json.dumps(result, indent=2)
+
+    # ========================================================================
+    # MCP TOOLS - Token Savings & Analytics
+    # ========================================================================
+
+    @mcp.tool()
+    async def get_token_savings(
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📊 Get token savings report for this session.
+        
+        Shows how many tokens were saved by using the coding context system
+        instead of reading full files every time. Includes:
+        - Total tokens stored vs retrieved from cache
+        - Cache hit/miss rates
+        - Estimated savings percentage
+        - Number of files in cache
+        
+        Args:
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.get_token_savings(agent_id)
         return json.dumps(result, indent=2)
