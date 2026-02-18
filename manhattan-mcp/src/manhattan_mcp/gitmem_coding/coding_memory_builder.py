@@ -50,69 +50,65 @@ class CodingMemoryBuilder:
         import hashlib
         import re
 
+        # Phase 1: Preparation & Deduplication
+        chunks_to_embed = []
+        embedding_indices = []
         enriched_chunks = []
         
-        for chunk_data in chunks:
+        for i, chunk_data in enumerate(chunks):
             chunk = chunk_data.copy()
             
-            # Ensure hash_id exists (critical for vector storage)
+            # Ensure hash_id exists
             if not chunk.get("hash_id") and chunk.get("content"):
-                # Normalize whitespace for consistent hashing
                 normalized = re.sub(r'\s+', ' ', chunk["content"]).strip()
                 chunk["hash_id"] = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
             hash_id = chunk.get("hash_id")
-            
-            # Check if vector already exists in vector store
             existing_vec = None
+            
             if hash_id:
                 existing_vec = self.vector_store.get_vector(agent_id, hash_id)
-
-            if not existing_vec:
-                # Try cache deduplication from global chunk registry
-                if hash_id:
+                if not existing_vec:
                     cached_chunk = self.store.get_cached_chunk(hash_id)
-                    # Cached chunk might still have inline vector from old format
                     if cached_chunk and cached_chunk.get("vector"):
-                        # Migrate: store it in vector store
-                        self.vector_store.add_vector_raw(
-                            agent_id, hash_id, cached_chunk["vector"]
-                        )
+                        self.vector_store.add_vector_raw(agent_id, hash_id, cached_chunk["vector"])
                         existing_vec = cached_chunk["vector"]
 
             if not existing_vec:
-                # Generate embedding
                 content_to_embed = self._prepare_embedding_text(chunk)
                 if content_to_embed:
-                    try:
-                        vector = self.embedding_client.embed(content_to_embed)
-                        if hasattr(vector, 'tolist'):
-                            vector = vector.tolist()
-                        elif not isinstance(vector, list):
-                            vector = list(vector)
-                        
-                        # Store in dedicated vectors.json
-                        if hash_id:
-                            self.vector_store.add_vector_raw(agent_id, hash_id, vector)
-                        
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to generate embedding for chunk "
-                            f"{chunk.get('name', 'unknown')}: {e}"
-                        )
-
-            # Set embedding_id to reference the vector
+                    chunks_to_embed.append(content_to_embed)
+                    embedding_indices.append(i)
+            
+            # Set embedding_id if we have a hash_id
             if hash_id:
                 chunk["embedding_id"] = hash_id
-
-            # Remove inline vector from chunk (vectors live in vectors.json)
-            chunk.pop("vector", None)
             
-            # Cache the chunk (without inline vector) in global registry
+            chunk.pop("vector", None)
+            enriched_chunks.append(chunk)
+
+        # Phase 2: Batch Embedding
+        if chunks_to_embed:
+            try:
+                vectors = self.embedding_client.embed_batch(chunks_to_embed)
+                
+                # Store new vectors
+                for idx, vector in zip(embedding_indices, vectors):
+                    if hasattr(vector, 'tolist'):
+                        vector = vector.tolist()
+                    
+                    hash_id = enriched_chunks[idx].get("hash_id")
+                    if hash_id:
+                        self.vector_store.add_vector_raw(agent_id, hash_id, vector)
+                        
+            except Exception as e:
+                logger.error(f"Batch embedding failed: {e}")
+
+        # Phase 3: Final Caching
+        for chunk in enriched_chunks:
+            hash_id = chunk.get("hash_id")
             if hash_id:
                 self.store.cache_chunk(chunk)
-            
-            enriched_chunks.append(chunk)
 
         # Store chunks (no inline vectors)
         return self.store.store_file_chunks(

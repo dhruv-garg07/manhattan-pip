@@ -69,14 +69,14 @@ class CodingAPI:
         )
 
     # 2. Read (Query or ID)
-    def get_flow(self, agent_id: str, query: str) -> Dict[str, Any]:
+    def get_flow(self, agent_id: str, query: str, top_k: int = 5) -> Dict[str, Any]:
         """
         Retrieve Code Flow/Context based on query.
         
         Performs a hybrid search on chunks.
         """
         # Hybrid Search on Chunks via Retriever
-        results = self.retriever.search(agent_id, query)
+        results = self.retriever.search(agent_id, query, top_k=top_k)
         
         return results
 

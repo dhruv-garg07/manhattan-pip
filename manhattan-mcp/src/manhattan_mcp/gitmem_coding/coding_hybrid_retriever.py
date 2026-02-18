@@ -367,7 +367,7 @@ class CodingHybridRetriever:
                 final_score = (vec_score * alpha) + (kw_score * (1.0 - alpha)) + line_match_boost
                 if final_score > 0.01:  # Threshold to filter noise
                     # Filter out full content, keep only summary and metadata
-                    summary_chunk = {k: v for k, v in chunk.items() if k != "content"}
+                    summary_chunk = {k: v for k, v in chunk.items() if k != "hash_id" and k != "embedding_id"}
                     
                     scored_chunks.append({
                         "file_path": file_path,

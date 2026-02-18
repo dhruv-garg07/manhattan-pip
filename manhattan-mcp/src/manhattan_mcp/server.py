@@ -1017,55 +1017,44 @@ if coding_api is not None:
     @mcp.tool()
     async def get_flow(
         agent_id: str,
-        query: str
+        query: str,
     ) -> str:
         """
         🔍 Search or Retrieve Code Flow Context.
-        
-        Optimized for semantic code retrieval based on hybrid query.
-        Returns atomic code units (functions, classes, blocks) matching the query.
 
-        FIELD DEFINITIONS:
-        - name: Entity name (e.g., "AuthManager", "process_data").
-        - type: "function", "class", "module", "block", "import".
-        - content: Minimal signature/stub (MUST NOT be full code if summary provided).
-        - summary: Lossless restatement of logic (~50% compression). Preserve schemas.
-        - keywords: Search-optimized concepts and dependencies.
-        - start_line / end_line: Optional line range (default 0).
+        Use this tool to find relevant code snippets, functions, classes, or logic blocks within the codebase based on a natural language query.
+        It uses a hybrid retrieval approach (semantic + keyword) to find the most relevant "Code Flow" units.
+        
+        INPUT SCHEMA:
+        {
+          "type": "object",
+          "properties": {
+            "agent_id": {
+              "type": "string",
+              "description": "The unique identifier for the agent (e.g., 'default')."
+            },
+            "query": {
+              "type": "string",
+              "description": "A natural language search query describing what you are looking for."
+            }
+          },
+          "required": [
+            "agent_id",
+            "query"
+          ]
+        }
 
         EXAMPLES:
         
-        1. Class Query: "Find the component managing user sessions."
-        Output: {
-            "name": "SessionManager", "type": "class", "content": "class SessionManager: ...",
-            "summary": "Responsible for user login/logout lifecycles and token persistence.",
-            "keywords": ["session", "login", "token"], "start_line": 5, "end_line": 60
+        {
+          "agent_id": "default",
+          "query": "Find the component managing user sessions",
         }
-
-        2. Interaction Query: "How does the API handle data stream noise?"
-        Output: {
-            "name": "process_stream", "type": "function", "content": "def process_stream(s): ...",
-            "summary": "Consumes binary input and applies a sliding window filter for noise reduction.",
-            "keywords": ["noise reduction", "stream", "filter"], "start_line": 100, "end_line": 120
-        }
-
-        OUTPUT FORMAT: Return ONLY a valid JSON array.
-
-        Schema:
-        [
-          {
-            "name": string,
-            "type": string,
-            "content": string,
-            "summary": string,
-            "keywords": [string],
-            "start_line": int,
-            "end_line": int
-          }
-        ]
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.get_flow(agent_id, query)
+        top_k = 1 # Hardcoding for now, for generating the most accurate response
+        result = coding_api.get_flow(agent_id, query, top_k=top_k)
+        result["next_instruction"] = "If you are not satisfied with the responses, try again get_flow with other relevant query"
         return json.dumps(result, indent=2)
 
     @mcp.tool()

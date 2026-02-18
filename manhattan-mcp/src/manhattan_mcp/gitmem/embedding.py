@@ -17,6 +17,8 @@ import urllib.error
 import ssl
 from typing import List, Optional, Union, Dict, Any
 from pathlib import Path
+import threading
+import concurrent.futures
 
 
 # Check if numpy is available, use pure Python fallback if not
@@ -170,6 +172,9 @@ class RemoteEmbeddingClient:
         if self._cache_path and self._cache_path.exists():
             self._load_cache()
         
+        # Thread safety lock
+        self.lock = threading.Lock()
+        
         # SSL Context for certificate issues
         self.ssl_context = ssl.create_default_context()
         self.ssl_context.check_hostname = False
@@ -228,35 +233,44 @@ class RemoteEmbeddingClient:
         # Check cache first
         if self.cache_embeddings:
             cache_key = self._get_cache_key(text)
-            if cache_key in self._cache:
-                return self._cache[cache_key]
+            with self.lock:
+                if cache_key in self._cache:
+                    return self._cache[cache_key]
         
         # Call remote API
         embedding = self._call_api(text)
         
         # Cache result
         if self.cache_embeddings:
-            self._cache[cache_key] = embedding
-            # Periodically save cache
-            if len(self._cache) % 100 == 0:
-                self._save_cache()
+            with self.lock:
+                self._cache[cache_key] = embedding
+                # Periodically save cache
+                if len(self._cache) % 100 == 0:
+                    self._save_cache()
         
         return embedding
     
-    def embed_batch(self, texts: List[str]):
+    def embed_batch(self, texts: List[str], max_workers: int = 10):
         """
-        Generate embeddings for a batch of texts.
+        Generate embeddings for a batch of texts in parallel.
         
         Args:
             texts: List of texts to embed
+            max_workers: Maximum number of parallel threads
         
         Returns:
             Array/list of normalized embedding vectors
         """
-        embeddings = []
-        for text in texts:
-            emb = self.embed(text)
-            embeddings.append(emb)
+        if not texts:
+            return []
+            
+        print(f"[Embedding] Batch embedding {len(texts)} texts with {max_workers} workers...")
+        
+        # Use ThreadPoolExecutor for parallel API calls
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Map preserve order
+            embeddings = list(executor.map(self.embed, texts))
+            
         return stack_vectors(embeddings)
     
     def _call_api(self, text: str):
@@ -394,9 +408,10 @@ class RemoteEmbeddingClient:
         if norm > 0:
             embedding = embedding / norm
         
-        # Update dimension if different
-        if len(embedding) != self.dimension:
-            self.dimension = len(embedding)
+        # Update dimension if different (with lock protection)
+        with self.lock:
+            if len(embedding) != self.dimension:
+                self.dimension = len(embedding)
         
         return embedding
     
