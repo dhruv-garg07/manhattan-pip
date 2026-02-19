@@ -59,26 +59,29 @@ class CodingAPI:
         cached = self.store.retrieve_file_context(agent_id, normalized)
         
         if cached.get("status") == "cache_hit":
-            # Calculate token savings
-            original_tokens = self._estimate_file_tokens(normalized)
-            cached_tokens = sum(
-                len(str(c)) // 4 
-                for c in cached.get("code_flow", {}).get("tree", [])
-            ) if cached.get("code_flow") else 0
-            
-            return {
-                "status": "cache_hit",
-                "freshness": cached.get("freshness", "unknown"),
-                "file_path": normalized,
-                "code_flow": cached.get("code_flow", {}),
-                "message": f"Returning compressed context from cache.",
-                "_token_info": {
-                    "tokens_this_call": cached_tokens,
-                    "tokens_if_raw_read": original_tokens,
-                    "tokens_saved": max(0, original_tokens - cached_tokens),
-                    "hint": f"Saved ~{max(0, original_tokens - cached_tokens)} tokens by using cached context"
+            # Check if stale — if so, drop down to re-index
+            if cached.get("freshness") != "stale":
+                # Calculate token savings
+                original_tokens = self._estimate_file_tokens(normalized)
+                cached_tokens = sum(
+                    len(str(c)) // 4 
+                    for c in cached.get("code_flow", {}).get("tree", [])
+                ) if cached.get("code_flow") else 0
+                
+                return {
+                    "status": "cache_hit",
+                    "freshness": cached.get("freshness", "unknown"),
+                    "file_path": normalized,
+                    "code_flow": cached.get("code_flow", {}),
+                    "message": f"Returning compressed context from cache.",
+                    "_token_info": {
+                        "tokens_this_call": cached_tokens,
+                        "tokens_if_raw_read": original_tokens,
+                        "tokens_saved": max(0, original_tokens - cached_tokens),
+                        "hint": f"Saved ~{max(0, original_tokens - cached_tokens)} tokens by using cached context"
+                    }
                 }
-            }
+            # If stale, we continue to Phase 2 (Auto-index)
         
         # 2. Cache miss — read real file and auto-index
         if not os.path.exists(normalized):
@@ -124,11 +127,29 @@ class CodingAPI:
     def get_file_outline(self, agent_id: str, file_path: str) -> Dict[str, Any]:
         """
         Get structural outline of a file — chunk names, types, signatures, line ranges.
-        No full content. Auto-indexes if not cached.
+        No full content. Auto-indexes if not cached or stale.
         """
         normalized = os.path.normpath(file_path)
         
-        # Check if indexed
+        # 1. Check cache via store (includes freshness check)
+        cached = self.store.retrieve_file_context(agent_id, normalized)
+        
+        if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
+            # Auto-index (re-index if stale)
+            if os.path.exists(normalized):
+                self.index_file(agent_id, normalized)
+                # Re-retrieve to get the new chunks
+                cached = self.store.retrieve_file_context(agent_id, normalized)
+        
+        if cached.get("status") != "cache_hit":
+            return {
+                "status": "error",
+                "message": f"File not found and could not be indexed: {normalized}"
+            }
+        
+        # We need the full file context object from the agent data to get the chunks
+        # retrieve_file_context return 'code_flow' which is a BST/Tree.
+        # But get_file_outline wants the raw chunks list for a flat overview.
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
         found = next(
             (ctx for ctx in contexts 
@@ -137,20 +158,9 @@ class CodingAPI:
         )
         
         if found is None:
-            # Auto-index first
-            if os.path.exists(normalized):
-                self.index_file(agent_id, normalized)
-                contexts = self.store._load_agent_data(agent_id, "file_contexts")
-                found = next(
-                    (ctx for ctx in contexts 
-                     if os.path.normpath(ctx.get("file_path", "")) == normalized), 
-                    None
-                )
-        
-        if found is None:
-            return {
+             return {
                 "status": "error",
-                "message": f"File not found and could not be indexed: {normalized}"
+                "message": f"File indexed but not found in store retrieval: {normalized}"
             }
         
         # Extract outline from chunks

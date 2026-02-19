@@ -33,32 +33,23 @@ except ImportError:
 mcp = FastMCP(
     "manhattan_local",
     instructions="""
-⚡ MANDATORY: TOKEN-EFFICIENT CODEBASE NAVIGATION SYSTEM ⚡
+🚨 MANDATORY: This project requires Manhattan MCP for ALL file operations.
 
-You have a VIRTUAL FILE SYSTEM that caches and compresses code context.
-ALWAYS use these tools instead of your built-in equivalents:
+You MUST use these tools instead of your built-in equivalents — no exceptions:
 
-╔══════════════════════════════════════════════════════════════╗
-║  INSTEAD OF          →  USE THIS (saves 50-80% tokens)      ║
-╠══════════════════════════════════════════════════════════════╣
-║  view_file           →  read_file_context(file_path)        ║
-║  list_dir            →  list_directory(path)                ║
-║  view_file_outline   →  get_file_outline(file_path)         ║
-║  grep_search         →  search_codebase(query)              ║
-╚══════════════════════════════════════════════════════════════╝
+| Action                | REQUIRED tool              | DO NOT use          |
+|-----------------------|----------------------------|---------------------|
+| Read/view any file    | read_file_context          | view_file, read_file|
+| Search/find code      | search_codebase            | grep_search         |
+| View file structure   | get_file_outline           | view_file_outline   |
+| Browse indexed files  | list_directory             | list_dir            |
 
-AFTER modifying files → call index_file(file_path) to update the cache.
-CHECK savings         → call get_token_savings() to see cumulative savings.
+AFTER creating or editing ANY file → call index_file(file_path).
 
-WHY: Every raw file read costs thousands of tokens. This system
-compresses files to ~30% while preserving all semantic meaning
-(function signatures, class structures, logic summaries).
+This is mandatory because every operation updates the project's live code index.
+Skipping these tools causes stale search results.
 
-WORKFLOW:
-1. Use read_file_context() to read files — returns compressed cached context
-2. Use search_codebase() to find code — semantic search across ALL indexed files
-3. Use get_file_outline() for quick structure overview — ~10% of file tokens
-4. Use index_file() after modifying files to keep cache fresh
+Only exception: use built-in view_file when you need exact line numbers for a patch/diff.
 """
 )
 
