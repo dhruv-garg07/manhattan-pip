@@ -1,0 +1,57 @@
+[Embedding] numpy not available, using pure Python vectors
+[Embedding] Loaded 100 cached embeddings
+[Embedding] Using Gradio API: https://iotacluster-embedding-model.hf.space/gradio_api/call/embed_dense
+[Embedding] Dimension: 768
+======================================================================
+   RIGOROUS E2E TEST: MULTI-FILE INDEXING & DIFFICULT QUERIES
+======================================================================
+
+>>> [PROCESS] Initializing API and cleaning test directory
+API initialized at: /Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/.test_e2e_data
+
+>>> [PROCESS] Indexing multiple complex source files for realistic search
+  Indexing server.py...
+[Embedding] Batch embedding 15 texts with 10 workers...
+  Indexing coding_hybrid_retriever.py...
+[Embedding] Batch embedding 21 texts with 10 workers...
+  Indexing ast_skeleton.py...
+[Embedding] Batch embedding 24 texts with 10 workers...
+
+>>> [PROCESS] Testing SEARCH with difficult queries
+
+  Query: 'How does the system balance token savings with search accuracy?'
+  Found 3 matches.
+    Match 1: coding_hybrid_retriever.py (Score: 0.509, Type: hybrid)
+    Match 2: ast_skeleton.py (Score: 0.425, Type: hybrid)
+  [PASS] Search: Conceptual: Token vs Accuracy
+
+  Query: 'Explain the scoring mechanism used in hybrid search including weights between vector and keyword scores.'
+  Found 3 matches.
+    Match 1: coding_hybrid_retriever.py (Score: 0.679, Type: hybrid)
+    Match 2: coding_hybrid_retriever.py (Score: 0.637, Type: hybrid)
+  [PASS] Search: Technical: Hybrid Scoring
+
+  Query: 'Where is the platform-specific logic for data path resolution for Windows, macOS, and Linux?'
+  Found 3 matches.
+    Match 1: server.py (Score: 0.777, Type: hybrid)
+    Match 2: ast_skeleton.py (Score: 0.440, Type: hybrid)
+  [PASS] Search: Implementation: Path Resolution
+
+  Query: 'What are the specific instructions or mandatory tool usage rules given to AI agents?'
+  Found 3 matches.
+    Match 1: server.py (Score: 0.352, Type: hybrid)
+    Match 2: coding_hybrid_retriever.py (Score: 0.190, Type: hybrid)
+  [PASS] Search: Constraint: Agent Instructions
+
+>>> [PROCESS] Verifying other tools lifecycle
+  [PASS] get_file_outline
+  [PASS] read_file_context (cache hit)
+  [PASS] list_directory (VFS check)
+  Cumulative tokens saved: 0
+  [PASS] get_token_savings
+  [PASS] remove_index
+
+======================================================================
+   FINAL RESULTS: 9 passed, 0 failed
+======================================================================
+
