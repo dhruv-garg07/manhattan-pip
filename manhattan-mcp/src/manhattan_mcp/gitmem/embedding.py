@@ -151,8 +151,8 @@ class RemoteEmbeddingClient:
             cache_path: Path for embedding cache (if caching enabled)
         """
         # Get API URL from environment or use default
-        self.api_url = api_url or os.getenv("REMOTE_EMBEDDING_URL") or os.getenv("EMBEDDING_API_URL") or self.DEFAULT_API_URL
-        self.api_key = api_key or os.getenv("EMBEDDING_API_KEY") or os.getenv("HF_TOKEN")
+        self.api_url = api_url or os.getenv("REMOTE_EMBEDDING_URL") or os.getenv("EMBEDDING_API_URL") or os.getenv("MANHATTAN_API_URL") or self.DEFAULT_API_URL
+        self.api_key = api_key or os.getenv("EMBEDDING_API_KEY") or os.getenv("MANHATTAN_API_KEY") or os.getenv("HF_TOKEN")
         self.model_name = model_name
         
         # Get dimension from environment or use default

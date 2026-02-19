@@ -1,20 +1,19 @@
-# Manhattan MCP
+# Manhattan MCP (GitMem)
 
-**Give AI Agents Persistent Memory** - MCP Server for the Manhattan Memory System
+**Token-Efficient Codebase Navigation** - MCP Server for the Manhattan Memory System.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Manhattan MCP is a local [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that connects AI agents (Claude Desktop, Cursor, Windsurf, etc.) to the **Manhattan Memory System** - a cloud-based persistent memory for AI assistants.
+Manhattan MCP is a local [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides AI agents (Claude Desktop, Cursor, Windsurf, etc.) with a **Virtual File System (VFS)** backed by compressed, cached code context. It allows agents to understand large codebases while saving 50-80% on tokens.
 
 ## Features
 
-- 🧠 **Persistent Memory** - Store and retrieve information across conversations
-- 🔍 **Semantic Search** - Find relevant memories using natural language queries
-- 🤖 **AI-Generated Answers** - Get comprehensive answers using memory context
-- 👤 **Multi-Agent Support** - Create separate memory spaces for different use cases
-- 📊 **Analytics** - Track memory usage and agent statistics
-- 💾 **Export/Import** - Backup and restore memory data
+- 🏗️ **GitMem Context** - Compressed semantic code skeletons (signatures, summaries, hierarchies).
+- 🔍 **Hybrid Search** - Semantic and keyword search across the entire codebase.
+- 📂 **VFS Navigation** - Browse and read files via token-efficient outlines and contexts.
+- 📝 **Auto-Indexing** - Automatically keeps the code index fresh after edits.
+- 📊 **Token Analytics** - Track token savings and repository indexing status.
 
 ## Installation
 
@@ -24,28 +23,21 @@ pip install manhattan-mcp
 
 ## Quick Start
 
-### 1. Get Your API Key
-
-Sign up at [https://themanhattanproject.ai](https://themanhattanproject.ai) to get your API key.
-
-### 2. Set Environment Variable
+### 1. Install Manhattan MCP
 
 ```bash
-export MANHATTAN_API_KEY="your-api-key-here"
+pip install manhattan-mcp
 ```
 
-Or create a `.env` file:
+### 2. Configure Your AI Client
 
-```env
-MANHATTAN_API_KEY=your-api-key-here
-```
+Setting up Manhattan MCP is a two-step process:
 
-### 3. Configure Your AI Client
+#### Step A: Register the Server (One-time)
+Add Manhattan MCP to your AI tool's global settings.
 
-#### Claude Desktop
-
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-
+**Claude Desktop**
+Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -57,27 +49,17 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-#### Cursor
+**Cursor**
+Add to Cursor Settings > MCP:
+- Name: `manhattan`
+- Type: `command`
+- Command: `manhattan-mcp`
 
-Add to your Cursor MCP settings (`.cursor/mcp.json`):
-
+**GitHub Copilot (VS Code)**
+Add to your Copilot MCP settings:
 ```json
 {
-  "mcpServers": {
-    "manhattan": {
-      "command": "manhattan-mcp"
-    }
-  }
-}
-```
-
-#### Windsurf
-
-Add to your Windsurf configuration:
-
-```json
-{
-  "mcpServers": {
+  "servers": {
     "manhattan": {
       "command": "manhattan-mcp",
       "args": ["start"]
@@ -86,58 +68,67 @@ Add to your Windsurf configuration:
 }
 ```
 
-### 4. Start Using Memory!
+#### Step B: Apply Project Rules (Per Project)
+Run the setup command in your project root to ensure the agent follows the mandatory indexing policy.
 
-Once configured, your AI agent will have access to 35+ memory tools:
+```bash
+# For Cursor
+manhattan-mcp setup cursor
 
-- **`search_memory`** - Search for relevant memories
-- **`add_memory_direct`** - Store new information
-- **`get_context_answer`** - Get AI-generated answers with memory context
-- **`session_start`** / **`session_end`** - Manage conversation sessions
-- And many more!
+# For Claude
+manhattan-mcp setup claude
 
-## Available Tools
+# For Gemini (Antigravity)
+manhattan-mcp setup gemini
 
-### Memory Operations
-| Tool | Description |
-|------|-------------|
-| `search_memory` | Search memories using natural language |
-| `add_memory_direct` | Store structured memories |
-| `get_context_answer` | Get AI answers using memory context |
-| `update_memory_entry` | Update existing memories |
-| `delete_memory_entries` | Delete specific memories |
+# For GitHub Copilot
+manhattan-mcp setup copilot
 
-### Agent Management
-| Tool | Description |
-|------|-------------|
-| `create_agent` | Create a new memory agent |
-| `list_agents` | List all your agents |
-| `get_agent` | Get agent details |
-| `update_agent` | Update agent configuration |
-| `delete_agent` | Permanently delete an agent |
+# For Windsurf
+manhattan-mcp setup windsurf
 
-### Session Management
-| Tool | Description |
-|------|-------------|
-| `session_start` | Initialize a conversation |
-| `session_end` | End session and sync memories |
-| `pull_context` | Load relevant context |
-| `push_memories` | Sync pending memories |
+# For all supported clients
+manhattan-mcp setup all
+```
 
-### AI Helpers
-| Tool | Description |
-|------|-------------|
-| `auto_remember` | Automatically extract facts from messages |
-| `should_remember` | Check if info is worth storing |
-| `what_do_i_know` | Summary of known user info |
+### 3. Start Navigating!
+
+Once configured, your AI agent can use Manhattan MCP to understand your codebase efficiently.
+
+#### Example Usage
+
+**Searching for code:**
+```
+User: How does the authentication flow work?
+AI: *calls search_codebase "authentication flow"*
+    I found the authentication logic in `auth.py`. 
+    Let me read the context for you...
+```
+
+**Understanding a file:**
+```
+User: Summarize the main functions in server.py
+AI: *calls get_file_outline "src/server.py"*
+    The server.py file contains:
+    - `start_server()`: Initializes the FastMCP instance...
+    - `api_usage()`: Returns usage statistics...
+```
+
+**Saving tokens:**
+```
+User: Read the implementation of the memory builder.
+AI: *calls read_file_context "src/builder.py"*
+    (Returns a compressed semantic skeleton, saving 70% tokens)
+    The memory builder uses a two-phase ingestion process...
+```
 
 ## Configuration Options
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `MANHATTAN_API_KEY` | Your API key (required) | - |
-| `MANHATTAN_API_URL` | API endpoint URL | `https://themanhattanproject.ai/mcp` |
-| `MANHATTAN_AGENT_ID` | Default agent ID | Enterprise default |
+| `MANHATTAN_API_KEY` | Your API key (if using cloud embeddings) | - |
+| `MANHATTAN_API_URL` | Custom API URL (optional) | Gradio Endpoint |
+| `MANHATTAN_MEM_PATH` | Storage path for memory/index | `~/.manhattan-mcp/data` |
 | `MANHATTAN_TIMEOUT` | Request timeout (seconds) | `120` |
 
 ## CLI Commands
@@ -146,43 +137,14 @@ Once configured, your AI agent will have access to 35+ memory tools:
 # Start the MCP server (default)
 manhattan-mcp start
 
+# Set up client rules (Cursor, Claude, etc.)
+manhattan-mcp setup [client]
+
 # Show version
 manhattan-mcp --version
 
 # Show help
 manhattan-mcp --help
-```
-
-## Example Usage
-
-Once your AI agent is connected, it can use memory like this:
-
-**Storing information:**
-```
-User: My name is Sarah and I prefer Python over JavaScript.
-AI: *calls add_memory_direct to store this preference*
-    Nice to meet you, Sarah! I've noted your preference for Python.
-```
-
-**Retrieving context:**
-```
-User: What programming language should I use for this project?
-AI: *calls search_memory to find preferences*
-    Based on your preference for Python, I'd recommend using it for this project!
-```
-
-## Development
-
-```bash
-# Clone the repository
-git clone https://github.com/agent-architects/manhattan-mcp
-cd manhattan-mcp
-
-# Install in development mode
-pip install -e ".[dev]"
-
-# Run tests
-pytest
 ```
 
 ## License
