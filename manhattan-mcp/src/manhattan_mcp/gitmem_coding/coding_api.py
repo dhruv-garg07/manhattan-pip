@@ -14,6 +14,7 @@ from .coding_file_system import CodingFileSystem
 import os
 import json
 import hashlib
+import time
 
 
 class CodingAPI:
@@ -41,6 +42,22 @@ class CodingAPI:
         self.builder = CodingMemoryBuilder(self.store, self.vector_store)
         self.retriever = CodingHybridRetriever(self.store, self.vector_store)
         self.filesystem = CodingFileSystem(self.store)
+        
+        # Performance tracking (session-scoped, not persisted)
+        self._perf_tracker = {
+            "indexing": {"total_ms": 0, "count": 0, "last_ms": 0},
+            "retrieval": {"total_ms": 0, "count": 0, "last_ms": 0},
+            "search": {"total_ms": 0, "count": 0, "last_ms": 0},
+            "embedding": {"total_ms": 0, "count": 0, "last_ms": 0},
+        }
+    
+    def _record_perf(self, op: str, elapsed_ms: float):
+        """Record a performance measurement."""
+        tracker = self._perf_tracker.get(op)
+        if tracker:
+            tracker["total_ms"] += elapsed_ms
+            tracker["count"] += 1
+            tracker["last_ms"] = round(elapsed_ms, 1)
     
     # =========================================================================
     # VFS Navigation Tools (NEW — for agent-facing MCP tools)
@@ -53,6 +70,7 @@ class CodingAPI:
         Returns:
             Dict with compressed context (chunks, outline, metadata), token info.
         """
+        start_t = time.perf_counter()
         normalized = os.path.normpath(file_path)
         
         # 1. Check cache
@@ -68,6 +86,7 @@ class CodingAPI:
                     for c in cached.get("code_flow", {}).get("tree", [])
                 ) if cached.get("code_flow") else 0
                 
+                self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
                 return {
                     "status": "cache_hit",
                     "freshness": cached.get("freshness", "unknown"),
@@ -109,6 +128,7 @@ class CodingAPI:
                 for c in code_flow.get("tree", [])
             ) if code_flow else original_tokens
             
+            self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
             return {
                 "status": "auto_indexed",
                 "file_path": normalized,
@@ -422,6 +442,206 @@ class CodingAPI:
         return self.store.get_detailed_cache_stats(agent_id)
     
     # =========================================================================
+    # Tier 2 Features: Invalidation, Summaries, Snapshots, Analytics, Perf
+    # =========================================================================
+    
+    def invalidate_cache(
+        self, agent_id: str, file_path: str = None, scope: str = "file"
+    ) -> Dict[str, Any]:
+        """
+        Explicitly invalidate cache entries. scope: 'file', 'stale', or 'all'.
+        """
+        if scope == "file" and file_path:
+            result = self.store.invalidate_with_vectors(agent_id, file_path)
+            if result["removed"] and result["hash_ids"]:
+                self.vector_store.delete_vectors(agent_id, result["hash_ids"])
+            return {
+                "status": "invalidated" if result["removed"] else "not_found",
+                "scope": "file",
+                "file_path": file_path,
+                "vectors_cleaned": len(result.get("hash_ids", [])),
+            }
+        
+        elif scope == "stale":
+            result = self.store.invalidate_stale(agent_id)
+            if result["hash_ids"]:
+                self.vector_store.delete_vectors(agent_id, result["hash_ids"])
+            return {
+                "status": "invalidated",
+                "scope": "stale",
+                "invalidated": result["invalidated"],
+                "files": result["files"],
+                "vectors_cleaned": len(result.get("hash_ids", [])),
+            }
+        
+        elif scope == "all":
+            contexts = self.store._load_agent_data(agent_id, "file_contexts")
+            all_hash_ids = []
+            for ctx in contexts:
+                all_hash_ids.extend(
+                    ch.get("hash_id") for ch in ctx.get("chunks", []) if ch.get("hash_id")
+                )
+            if all_hash_ids:
+                self.vector_store.delete_vectors(agent_id, all_hash_ids)
+            count = len(contexts)
+            self.store._save_agent_data(agent_id, "file_contexts", [])
+            # Clear global index
+            self.store._global_index = {}
+            self.store._save_global_index()
+            return {
+                "status": "invalidated",
+                "scope": "all",
+                "invalidated": count,
+                "vectors_cleaned": len(all_hash_ids),
+            }
+        
+        return {"status": "error", "message": f"Invalid scope '{scope}'. Use 'file', 'stale', or 'all'."}
+    
+    def summarize_context(
+        self, agent_id: str, file_path: str, verbosity: str = "brief"
+    ) -> Dict[str, Any]:
+        """
+        Return a file's context at configurable verbosity levels.
+        brief (~50 tokens), normal (code_flow), detailed (full chunks).
+        """
+        normalized = os.path.normpath(file_path)
+        
+        # Ensure indexed
+        cached = self.store.retrieve_file_context(agent_id, normalized)
+        if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
+            if os.path.exists(normalized):
+                self.index_file(agent_id, normalized)
+                cached = self.store.retrieve_file_context(agent_id, normalized)
+        
+        if cached.get("status") != "cache_hit":
+            return {"status": "error", "message": f"Could not retrieve context: {normalized}"}
+        
+        # Get full context data
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        found = next(
+            (ctx for ctx in contexts
+             if os.path.normpath(ctx.get("file_path", "")) == normalized),
+            None
+        )
+        if not found:
+            return {"status": "error", "message": f"Context not found in store: {normalized}"}
+        
+        chunks = found.get("chunks", [])
+        file_name = os.path.basename(normalized)
+        language = found.get("language", "unknown")
+        
+        if verbosity == "brief":
+            # Ultra-compact: file + language + chunk type counts + key names
+            type_counts = {}
+            key_names = []
+            for ch in chunks:
+                ct = ch.get("type", "block")
+                type_counts[ct] = type_counts.get(ct, 0) + 1
+                if ct in ("class", "function") and ch.get("name"):
+                    key_names.append(ch["name"])
+            
+            type_summary = ", ".join(f"{v} {k}s" for k, v in type_counts.items())
+            names_str = ", ".join(key_names[:8])
+            
+            return {
+                "status": "ok",
+                "verbosity": "brief",
+                "file": file_name,
+                "language": language,
+                "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
+                "tokens_used": len(f"{type_summary} {names_str}") // 4,
+            }
+        
+        elif verbosity == "detailed":
+            # Full chunks with content and summaries
+            detailed_chunks = []
+            for ch in chunks:
+                detailed_chunks.append({
+                    "name": ch.get("name", ""),
+                    "type": ch.get("type", ""),
+                    "content": ch.get("content", ""),
+                    "summary": ch.get("summary", ""),
+                    "keywords": ch.get("keywords", []),
+                    "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
+                })
+            return {
+                "status": "ok",
+                "verbosity": "detailed",
+                "file": file_name,
+                "language": language,
+                "chunks": detailed_chunks,
+                "total_chunks": len(detailed_chunks),
+            }
+        
+        else:  # "normal" — default: return code_flow tree
+            return {
+                "status": "ok",
+                "verbosity": "normal",
+                "file": file_name,
+                "language": language,
+                "code_flow": cached.get("code_flow", {}),
+                "freshness": cached.get("freshness", "unknown"),
+            }
+    
+    def create_snapshot(self, agent_id: str, message: str = "Snapshot") -> Dict[str, Any]:
+        """
+        Create an immutable snapshot of all cached contexts.
+        Wraps CodingFileSystem.commit_snapshot.
+        """
+        sha = self.filesystem.commit_snapshot(agent_id, message)
+        if sha:
+            return {
+                "status": "ok",
+                "sha": sha,
+                "message": message,
+            }
+        return {
+            "status": "error",
+            "message": "Snapshot failed. Is .gitmem initialized? (Requires gitmem DAG backend)",
+        }
+    
+    def compare_snapshots(
+        self, agent_id: str, sha_a: str, sha_b: str
+    ) -> Dict[str, Any]:
+        """
+        Compare two snapshots and return the diff.
+        Wraps CodingFileSystem.get_diff.
+        """
+        diff = self.filesystem.get_diff(agent_id, sha_a, sha_b)
+        if diff is not None:
+            return {
+                "status": "ok",
+                "sha_a": sha_a,
+                "sha_b": sha_b,
+                "diff": diff,
+            }
+        return {
+            "status": "error",
+            "message": f"Could not compare snapshots {sha_a} vs {sha_b}. Check SHAs or .gitmem availability.",
+        }
+    
+    def usage_report(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get aggregate usage analytics: access counts, tokens, indexing stats.
+        """
+        return self.store.get_usage_report(agent_id)
+    
+    def performance_profile(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get performance timing data for key operations (session-scoped).
+        """
+        profile = {}
+        for op, data in self._perf_tracker.items():
+            count = data["count"]
+            profile[op] = {
+                "avg_ms": round(data["total_ms"] / count, 1) if count > 0 else 0,
+                "last_ms": data["last_ms"],
+                "count": count,
+                "total_ms": round(data["total_ms"], 1),
+            }
+        return {"status": "ok", "profile": profile}
+    
+    # =========================================================================
     # CRUD Operations (renamed for agent-facing tools)
     # =========================================================================
     
@@ -444,7 +664,10 @@ class CodingAPI:
         Search the indexed codebase with hybrid semantic + keyword search.
         Alias: get_mem.
         """
-        return self.retriever.search(agent_id, query, top_k=top_k)
+        start_t = time.perf_counter()
+        results = self.retriever.search(agent_id, query, top_k=top_k)
+        self._record_perf("search", (time.perf_counter() - start_t) * 1000)
+        return results
 
     def remove_index(self, agent_id: str, file_path: str) -> bool:
         """Remove a file's index. Alias: delete_mem."""
@@ -513,9 +736,12 @@ class CodingAPI:
             except Exception as e:
                 return {"status": "error", "message": f"Auto-chunking failed: {str(e)}"}
             
-        return self.builder.process_file_chunks(
+        start_t = time.perf_counter()
+        result = self.builder.process_file_chunks(
             agent_id=agent_id,
             file_path=file_path,
             chunks=chunks,
             language=lang,
         )
+        self._record_perf("indexing", (time.perf_counter() - start_t) * 1000)
+        return result

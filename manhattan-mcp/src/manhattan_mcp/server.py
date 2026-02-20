@@ -45,6 +45,12 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  list_dir            →  list_directory(path)                ║
 ║  view_file_outline   →  get_file_outline(file_path)         ║
 ║  grep_search         →  search_codebase(query)              ║
+║  grep_search (usage) →  cross_reference(symbol)             ║
+║  manual import trace →  dependency_graph(file_path)         ║
+║  reindex_file (full) →  delta_update(file_path)             ║
+║  get_token_savings   →  usage_report() / cache_stats()      ║
+║  manual diff/history →  compare_snapshots(a, b)             ║
+║  manual latency log  →  performance_profile()               ║
 ╚══════════════════════════════════════════════════════════════╝
 
 AFTER modifying files → call index_file(file_path) to update the cache.
@@ -340,6 +346,112 @@ if coding_api is not None:
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.cache_stats(agent_id)
         return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def invalidate_cache(
+        file_path: str = None,
+        scope: str = "file",
+        agent_id: str = "default"
+    ) -> str:
+        """
+        🧹 Explicitly invalidate cache entries for a file or entire scope.
+        
+        Use this when you want to force a clean state for a file or clear
+        stale entries that are no longer accurate.
+        
+        Args:
+            file_path: Absolute path to the file (only for scope='file')
+            scope: 'file' (target one), 'stale' (all outdated), or 'all' (reset entire cache)
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.invalidate_cache(agent_id, file_path, scope)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def summarize_context(
+        file_path: str,
+        verbosity: str = "brief",
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📝 Get a file's context at a specific verbosity level.
+        
+        Useful for quick overviews without reading the full code flow.
+        
+        Args:
+            file_path: Absolute path to the file
+            verbosity: 'brief' (~50 tokens), 'normal' (structured outline), or 'detailed' (full summaries)
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.summarize_context(agent_id, file_path, verbosity)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def create_snapshot(
+        message: str = "Snapshot",
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📸 Create an immutable snapshot of all currently indexed contexts.
+        
+        Use this before making major changes to the codebase to save the "before" state.
+        
+        Args:
+            message: Description of the snapshot
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.create_snapshot(agent_id, message)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def compare_snapshots(
+        sha_a: str,
+        sha_b: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        🔍 Compare two snapshots to see what changed in the codebase context.
+        
+        Args:
+            sha_a: commit SHA of the first snapshot
+            sha_b: commit SHA of the second snapshot
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.compare_snapshots(agent_id, sha_a, sha_b)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def usage_report(
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📊 Get aggregate usage analytics (access counts, trends, top files).
+        
+        Args:
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.usage_report(agent_id)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def performance_profile(
+        agent_id: str = "default"
+    ) -> str:
+        """
+        ⚡ Get performance timing data for key operations (indexing, search, retrieval).
+        
+        Args:
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.performance_profile(agent_id)
+        return json.dumps(result, indent=2)
+
 
     # ========================================================================
     # MCP TOOLS - File Indexing (CRUD)

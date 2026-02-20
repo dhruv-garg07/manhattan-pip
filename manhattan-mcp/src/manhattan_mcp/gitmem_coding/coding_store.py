@@ -320,6 +320,8 @@ class CodingContextStore:
                 chunks[hash_id] = clean_chunk
                 self._save_chunks(chunks)
 
+
+
     def retrieve_file_context(
         self,
         agent_id: str,
@@ -327,18 +329,22 @@ class CodingContextStore:
     ) -> Dict[str, Any]:
         """
         Retrieve cached file content (Code Flow Tree) with freshness check.
+        Updates access metrics.
         """
+        from datetime import datetime
         normalized_path = os.path.normpath(file_path)
         contexts = self._load_agent_data(agent_id, "file_contexts")
         
-        found = next((ctx for ctx in contexts if os.path.normpath(ctx.get("file_path", "")) == normalized_path), None)
+        found_idx = next((i for i, ctx in enumerate(contexts) if os.path.normpath(ctx.get("file_path", "")) == normalized_path), None)
         
-        if found is None:
+        if found_idx is None:
             return {
                 "status": "cache_miss",
                 "file_path": normalized_path,
                 "message": "File not found in coding context cache."
             }
+        
+        found = contexts[found_idx]
         
         # Check freshness
         freshness_status = "unknown"
@@ -352,6 +358,15 @@ class CodingContextStore:
                     freshness_status = "fresh" if current_hash == stored_hash else "stale"
              else:
                 freshness_status = "missing"
+        except Exception:
+            pass
+
+        # Update access metrics
+        try:
+            found["access_count"] = found.get("access_count", 0) + 1
+            found["last_accessed_at"] = datetime.now().isoformat()
+            contexts[found_idx] = found
+            self._save_agent_data(agent_id, "file_contexts", contexts)
         except Exception:
             pass
 
@@ -721,6 +736,139 @@ class CodingContextStore:
             "freshness": freshness_counts,
             "per_file": per_file,
             "recommendations": recommendations
+        }
+    
+    # =========================================================================
+    # Invalidation & Usage Analytics (Tier 2)
+    # =========================================================================
+    
+    def invalidate_with_vectors(
+        self, agent_id: str, file_path: str
+    ) -> Dict[str, Any]:
+        """
+        Remove a file context and return its chunk hash_ids for vector cleanup.
+        """
+        normalized = os.path.normpath(file_path)
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        
+        found_idx = next(
+            (i for i, c in enumerate(contexts)
+             if os.path.normpath(c.get("file_path", "")) == normalized),
+            None
+        )
+        
+        if found_idx is None:
+            return {"removed": False, "hash_ids": []}
+        
+        ctx = contexts[found_idx]
+        hash_ids = [
+            ch.get("hash_id") for ch in ctx.get("chunks", [])
+            if ch.get("hash_id")
+        ]
+        
+        # Remove from global index
+        self._remove_from_global_index(normalized)
+        
+        # Remove from contexts
+        contexts.pop(found_idx)
+        self._save_agent_data(agent_id, "file_contexts", contexts)
+        
+        return {"removed": True, "hash_ids": hash_ids, "file_path": normalized}
+    
+    def invalidate_stale(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Find and remove all stale file contexts + return their vector hash_ids.
+        """
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        stale_files = []
+        all_hash_ids = []
+        
+        for ctx in contexts:
+            fp = ctx.get("file_path", "")
+            normalized = os.path.normpath(fp) if fp else ""
+            
+            try:
+                if normalized and os.path.exists(normalized):
+                    with open(normalized, 'r', encoding='utf-8', errors='replace') as f:
+                        content = f.read()
+                    current_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                    stored_hash = ctx.get("content_hash")
+                    if current_hash != stored_hash:
+                        stale_files.append(ctx)
+                        all_hash_ids.extend(
+                            ch.get("hash_id") for ch in ctx.get("chunks", []) if ch.get("hash_id")
+                        )
+                elif normalized:
+                    # File missing from disk — also stale
+                    stale_files.append(ctx)
+                    all_hash_ids.extend(
+                        ch.get("hash_id") for ch in ctx.get("chunks", []) if ch.get("hash_id")
+                    )
+            except Exception:
+                pass
+        
+        if stale_files:
+            stale_paths = {os.path.normpath(s.get("file_path", "")) for s in stale_files}
+            fresh = [c for c in contexts if os.path.normpath(c.get("file_path", "")) not in stale_paths]
+            self._save_agent_data(agent_id, "file_contexts", fresh)
+            for sp in stale_paths:
+                self._remove_from_global_index(sp)
+        
+        return {
+            "invalidated": len(stale_files),
+            "hash_ids": all_hash_ids,
+            "files": [s.get("file_path", "") for s in stale_files]
+        }
+    
+    def get_usage_report(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Aggregate usage analytics: access counts, tokens, indexing stats.
+        """
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        sessions = self._load_agent_data(agent_id, "coding_sessions")
+        
+        # Most accessed files
+        most_accessed = sorted(
+            contexts,
+            key=lambda c: c.get("access_count", 0),
+            reverse=True
+        )[:10]
+        
+        # Language distribution
+        lang_dist = {}
+        for ctx in contexts:
+            lang = ctx.get("language", "unknown")
+            lang_dist[lang] = lang_dist.get(lang, 0) + 1
+        
+        # Chunk stats
+        total_chunks = sum(len(ctx.get("chunks", [])) for ctx in contexts)
+        avg_chunks = round(total_chunks / len(contexts), 1) if contexts else 0
+        
+        return {
+            "sessions": {
+                "total": len(sessions),
+                "total_tokens_stored": sum(s.get("tokens_stored", 0) for s in sessions),
+                "total_tokens_retrieved": sum(s.get("tokens_retrieved", 0) for s in sessions),
+                "total_cache_hits": sum(s.get("cache_hits", 0) for s in sessions),
+                "total_cache_misses": sum(s.get("cache_misses", 0) for s in sessions),
+            },
+            "most_accessed_files": [
+                {
+                    "file": os.path.basename(c.get("file_path", "")),
+                    "file_path": c.get("file_path", ""),
+                    "access_count": c.get("access_count", 0),
+                    "tokens": c.get("token_estimate", 0),
+                    "language": c.get("language", "unknown"),
+                }
+                for c in most_accessed
+            ],
+            "indexing_activity": {
+                "total_files_indexed": len(contexts),
+                "total_chunks": total_chunks,
+                "avg_chunks_per_file": avg_chunks,
+                "language_distribution": lang_dist,
+            },
+            "total_tokens_cached": sum(c.get("token_estimate", 0) for c in contexts),
         }
     
     # =========================================================================
