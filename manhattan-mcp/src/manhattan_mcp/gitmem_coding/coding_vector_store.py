@@ -162,6 +162,20 @@ class CodingVectorStore:
             self._save_vectors(agent_id, vectors)
             return True
         return False
+    
+    def delete_vectors(self, agent_id: str, hash_ids: List[str]) -> int:
+        """Bulk delete vector entries. Returns count of deleted vectors."""
+        if not hash_ids:
+            return 0
+        vectors = self._load_vectors(agent_id)
+        deleted = 0
+        for hid in hash_ids:
+            if hid in vectors:
+                del vectors[hid]
+                deleted += 1
+        if deleted > 0:
+            self._save_vectors(agent_id, vectors)
+        return deleted
 
     def clear_vectors(self, agent_id: str):
         """Remove all vectors for an agent."""

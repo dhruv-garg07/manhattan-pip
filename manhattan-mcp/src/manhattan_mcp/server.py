@@ -45,6 +45,10 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  list_dir            →  list_directory(path)                ║
 ║  view_file_outline   →  get_file_outline(file_path)         ║
 ║  grep_search         →  search_codebase(query)              ║
+║  grep_search (usage) →  cross_reference(symbol)             ║
+║  manual import trace →  dependency_graph(file_path)         ║
+║  reindex_file (full) →  delta_update(file_path)             ║
+║  get_token_savings   →  cache_stats()                       ║
 ╚══════════════════════════════════════════════════════════════╝
 
 AFTER modifying files → call index_file(file_path) to update the cache.
@@ -238,6 +242,107 @@ if coding_api is not None:
         top_k = 3
         result = coding_api.search_codebase(agent_id, query, top_k=top_k)
         result["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
+        return json.dumps(result, indent=2)
+
+    # ========================================================================
+    # MCP TOOLS - Tier 1: Cross-Reference, Dependencies, Delta, Stats
+    # ========================================================================
+
+    @mcp.tool()
+    async def cross_reference(
+        symbol: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        🔗 Find all usages of a symbol across the entire indexed codebase.
+        
+        PREFER THIS over grep_search for "where is X used?" questions.
+        Searches the global symbol index and chunk data to find:
+        - Definitions (where a function/class is defined)
+        - Keyword matches (where a symbol appears in chunk keywords)
+        - Usage references (where a symbol is used in code content)
+        
+        Returns:
+        - File paths, chunk names, types, and line ranges for each reference
+        - Match reason (definition, keyword, or usage)
+        
+        Args:
+            symbol: Symbol name to search for (e.g., "UserManager", "login", "refresh_token")
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.cross_reference(agent_id, symbol)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def dependency_graph(
+        file_path: str,
+        depth: int = 1,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        🕸️ Build an import/dependency graph for a file.
+        
+        Shows what a file imports, what imports it, and cross-file calls.
+        Use instead of manually tracing imports across files.
+        
+        Returns:
+        - imports: List of modules this file imports
+        - imported_by: List of files that import this module
+        - calls_to: Cross-file method calls detected in the code
+        - graph_summary: Human-readable summary
+        
+        Args:
+            file_path: Absolute path to the file
+            depth: 1=direct deps only, 2=include transitive dependencies
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.dependency_graph(agent_id, file_path, depth)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def delta_update(
+        file_path: str,
+        agent_id: str = "default"
+    ) -> str:
+        """
+        ⚡ Incrementally re-index a file — only process changed chunks.
+        
+        PREFER THIS over reindex_file for efficiency.
+        Compares current file content against cached chunks:
+        - Unchanged chunks: embeddings reused (fast)
+        - New/modified chunks: re-embedded
+        - Deleted chunks: cleaned from vector store
+        
+        Returns detailed delta report showing what changed.
+        
+        Args:
+            file_path: Absolute path to the file to incrementally update
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.delta_update(agent_id, file_path)
+        return json.dumps(result, indent=2)
+
+    @mcp.tool()
+    async def cache_stats(
+        agent_id: str = "default"
+    ) -> str:
+        """
+        📊 Get detailed cache analytics with per-file freshness and recommendations.
+        
+        Enhanced replacement for get_token_savings. Shows:
+        - Overview: total files, chunks, tokens cached, hit rate
+        - Freshness: how many files are fresh/stale/missing
+        - Per-file breakdown: chunks, tokens, language, freshness, access count
+        - Recommendations: actionable suggestions (e.g., "3 files stale, run delta_update")
+        
+        Args:
+            agent_id: Agent identifier (default: "default")
+        """
+        agent_id = _normalize_agent_id(agent_id)
+        result = coding_api.cache_stats(agent_id)
         return json.dumps(result, indent=2)
 
     # ========================================================================

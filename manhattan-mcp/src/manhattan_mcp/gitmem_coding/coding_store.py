@@ -515,6 +515,215 @@ class CodingContextStore:
         }
     
     # =========================================================================
+    # Cross-Reference & Dependency Methods (Tier 1)
+    # =========================================================================
+    
+    def find_symbol_references(self, agent_id: str, symbol: str) -> Dict[str, Any]:
+        """
+        Find all references to a symbol across indexed files.
+        Uses global_index for file-level lookup, then scans chunks for details.
+        """
+        symbol_lower = symbol.lower()
+        
+        # 1. Search global index for files containing this symbol
+        matching_files = set()
+        for key, files in self._global_index.items():
+            if symbol_lower in key.lower() or key.lower() in symbol_lower:
+                matching_files.update(files)
+        
+        # 2. Scan chunks in matching files for detailed references
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        references = []
+        
+        for ctx in contexts:
+            ctx_path = os.path.normpath(ctx.get("file_path", ""))
+            chunks = ctx.get("chunks", [])
+            
+            # Check if file is in global index matches OR chunks contain symbol
+            file_matches = ctx_path in matching_files
+            
+            for chunk in chunks:
+                chunk_name = chunk.get("name", "").lower()
+                chunk_keywords = [kw.lower() for kw in chunk.get("keywords", [])]
+                chunk_content = chunk.get("content", "").lower()
+                
+                # Match by: name contains symbol, symbol in keywords, or symbol in content
+                if (symbol_lower in chunk_name or 
+                    symbol_lower in chunk_keywords or
+                    (file_matches and symbol_lower in chunk_content)):
+                    
+                    references.append({
+                        "file_path": ctx.get("file_path", ""),
+                        "chunk_name": chunk.get("name", "unknown"),
+                        "chunk_type": chunk.get("type", "unknown"),
+                        "start_line": chunk.get("start_line", 0),
+                        "end_line": chunk.get("end_line", 0),
+                        "context": (chunk.get("content", "")[:200] + "...") 
+                                   if len(chunk.get("content", "")) > 200 
+                                   else chunk.get("content", ""),
+                        "match_reason": "definition" if symbol_lower == chunk_name 
+                                       else "keyword" if symbol_lower in chunk_keywords
+                                       else "usage"
+                    })
+        
+        return {
+            "symbol": symbol,
+            "total_references": len(references),
+            "files_matched": len(set(r["file_path"] for r in references)),
+            "references": references
+        }
+    
+    def get_file_imports(self, agent_id: str, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract import information from a file's stored chunks.
+        Returns list of import details with module names.
+        """
+        normalized = os.path.normpath(file_path)
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        found = next(
+            (ctx for ctx in contexts 
+             if os.path.normpath(ctx.get("file_path", "")) == normalized),
+            None
+        )
+        
+        if found is None:
+            return []
+        
+        imports = []
+        for chunk in found.get("chunks", []):
+            if chunk.get("type") == "import":
+                content = chunk.get("content", "")
+                # Parse import statement
+                import_info = {"raw": content.strip(), "line": chunk.get("start_line", 0)}
+                
+                # Extract module name
+                import re as _re
+                from_match = _re.match(r'from\s+([\w.]+)\s+import', content)
+                direct_match = _re.match(r'import\s+([\w.]+)', content)
+                
+                if from_match:
+                    import_info["module"] = from_match.group(1)
+                    import_info["type"] = "from_import"
+                elif direct_match:
+                    import_info["module"] = direct_match.group(1)
+                    import_info["type"] = "direct_import"
+                
+                imports.append(import_info)
+        
+        return imports
+    
+    def find_importers(self, agent_id: str, module_name: str) -> List[Dict[str, Any]]:
+        """
+        Find all files that import a given module name.
+        Reverse lookup: "who imports X?"
+        """
+        module_lower = module_name.lower()
+        # Also match the last segment (e.g., "coding_store" matches ".coding_store")
+        module_basename = module_name.split(".")[-1].lower()
+        
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        importers = []
+        
+        for ctx in contexts:
+            for chunk in ctx.get("chunks", []):
+                if chunk.get("type") == "import":
+                    content = chunk.get("content", "").lower()
+                    if module_lower in content or module_basename in content:
+                        importers.append({
+                            "file_path": ctx.get("file_path", ""),
+                            "import_statement": chunk.get("content", "").strip(),
+                            "line": chunk.get("start_line", 0)
+                        })
+                        break  # One match per file is enough
+        
+        return importers
+    
+    def get_detailed_cache_stats(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get comprehensive cache statistics with per-file freshness checks.
+        """
+        contexts = self._load_agent_data(agent_id, "file_contexts")
+        sessions = self._load_agent_data(agent_id, "coding_sessions")
+        
+        # Per-file stats with freshness
+        per_file = []
+        freshness_counts = {"fresh": 0, "stale": 0, "missing": 0, "unknown": 0}
+        total_chunks = 0
+        
+        for ctx in contexts:
+            file_path = ctx.get("file_path", "")
+            normalized = os.path.normpath(file_path) if file_path else ""
+            chunk_count = len(ctx.get("chunks", []))
+            total_chunks += chunk_count
+            
+            # Check freshness
+            freshness = "unknown"
+            try:
+                if normalized and os.path.exists(normalized):
+                    with open(normalized, 'r', encoding='utf-8', errors='replace') as f:
+                        content = f.read()
+                    current_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                    stored_hash = ctx.get("content_hash")
+                    freshness = "fresh" if current_hash == stored_hash else "stale"
+                elif normalized:
+                    freshness = "missing"
+            except Exception:
+                pass
+            
+            freshness_counts[freshness] = freshness_counts.get(freshness, 0) + 1
+            
+            per_file.append({
+                "file": os.path.basename(file_path) if file_path else "unknown",
+                "file_path": file_path,
+                "chunks": chunk_count,
+                "tokens": ctx.get("token_estimate", 0),
+                "language": ctx.get("language", "unknown"),
+                "freshness": freshness,
+                "last_accessed": ctx.get("last_accessed_at", ""),
+                "access_count": ctx.get("access_count", 0)
+            })
+        
+        # Sort by token count descending
+        per_file.sort(key=lambda x: x["tokens"], reverse=True)
+        
+        # Aggregate stats
+        total_tokens = sum(f["tokens"] for f in per_file)
+        total_cache_hits = sum(s.get("cache_hits", 0) for s in sessions)
+        total_cache_misses = sum(s.get("cache_misses", 0) for s in sessions)
+        hit_rate = round(
+            (total_cache_hits / (total_cache_hits + total_cache_misses) * 100)
+            if (total_cache_hits + total_cache_misses) > 0 else 0, 2
+        )
+        
+        # Generate recommendations
+        recommendations = []
+        if freshness_counts["stale"] > 0:
+            recommendations.append(
+                f"{freshness_counts['stale']} file(s) are stale — consider running delta_update"
+            )
+        if freshness_counts["missing"] > 0:
+            recommendations.append(
+                f"{freshness_counts['missing']} file(s) missing from disk — consider remove_index"
+            )
+        if total_cache_hits == 0 and len(contexts) > 0:
+            recommendations.append(
+                "No cache hits recorded yet — use read_file_context instead of view_file"
+            )
+        
+        return {
+            "overview": {
+                "total_files": len(contexts),
+                "total_chunks": total_chunks,
+                "total_tokens_cached": total_tokens,
+                "cache_hit_rate": hit_rate,
+                "sessions_tracked": len(sessions)
+            },
+            "freshness": freshness_counts,
+            "per_file": per_file,
+            "recommendations": recommendations
+        }
+    
+    # =========================================================================
     # Cleanup Operations
     # =========================================================================
     

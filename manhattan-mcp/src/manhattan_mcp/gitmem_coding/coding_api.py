@@ -220,6 +220,198 @@ class CodingAPI:
         return 0
     
     # =========================================================================
+    # Tier 1 Features: Cross-Reference, Dependency Graph, Delta Update, Stats
+    # =========================================================================
+    
+    def cross_reference(self, agent_id: str, symbol: str) -> Dict[str, Any]:
+        """
+        Find all references to a symbol across indexed files.
+        Replaces grep_search for symbol usage lookups.
+        """
+        result = self.store.find_symbol_references(agent_id, symbol)
+        result["_token_info"] = {
+            "hint": f"Found {result['total_references']} references across {result['files_matched']} files — no grep needed"
+        }
+        return result
+    
+    def dependency_graph(self, agent_id: str, file_path: str, depth: int = 1) -> Dict[str, Any]:
+        """
+        Build import/dependency graph for a file.
+        Shows what this file imports and what imports it.
+        """
+        normalized = os.path.normpath(file_path)
+        file_basename = os.path.basename(normalized)
+        module_name = os.path.splitext(file_basename)[0]
+        
+        # Get imports FROM this file
+        imports_raw = self.store.get_file_imports(agent_id, normalized)
+        import_modules = []
+        for imp in imports_raw:
+            if "module" in imp:
+                import_modules.append(imp["module"])
+        
+        # Get files that import THIS file
+        imported_by = self.store.find_importers(agent_id, module_name)
+        
+        # Extract cross-file calls from chunks
+        calls_to = []
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        found = next(
+            (ctx for ctx in contexts 
+             if os.path.normpath(ctx.get("file_path", "")) == normalized),
+            None
+        )
+        if found:
+            for chunk in found.get("chunks", []):
+                if chunk.get("type") in ("method", "function"):
+                    content = chunk.get("content", "")
+                    # Find obj.method() calls where obj is a known class
+                    import re as _re
+                    ext_calls = _re.findall(r'self\.(\w+)\.(\w+)\s*\(', content)
+                    for obj_attr, method in ext_calls:
+                        calls_to.append({
+                            "target": f"{obj_attr}.{method}",
+                            "from": chunk.get("name", "unknown"),
+                            "line": chunk.get("start_line", 0)
+                        })
+        
+        # Depth > 1: follow transitive imports
+        transitive_imports = []
+        if depth > 1:
+            for mod in import_modules:
+                mod_basename = mod.split(".")[-1]
+                # Try to find this module in indexed files
+                for ctx in contexts:
+                    ctx_basename = os.path.splitext(os.path.basename(ctx.get("file_path", "")))[0]
+                    if ctx_basename == mod_basename:
+                        sub_imports = self.store.get_file_imports(agent_id, ctx.get("file_path", ""))
+                        for si in sub_imports:
+                            if "module" in si:
+                                transitive_imports.append({
+                                    "via": mod_basename,
+                                    "module": si["module"]
+                                })
+                        break
+        
+        result = {
+            "status": "ok",
+            "file": file_basename,
+            "file_path": normalized,
+            "imports": import_modules,
+            "imported_by": [ib["file_path"] for ib in imported_by],
+            "calls_to": calls_to,
+            "graph_summary": f"{file_basename} depends on {len(import_modules)} modules and is used by {len(imported_by)} modules"
+        }
+        
+        if transitive_imports:
+            result["transitive_imports"] = transitive_imports
+        
+        result["_token_info"] = {
+            "hint": f"Dependency graph built from cached index — no file reading required"
+        }
+        return result
+    
+    def delta_update(self, agent_id: str, file_path: str) -> Dict[str, Any]:
+        """
+        Incrementally re-index a file, only processing changed chunks.
+        Compares old vs new chunks by hash_id, skips unchanged, removes stale.
+        """
+        normalized = os.path.normpath(file_path)
+        
+        if not os.path.exists(normalized):
+            return {"status": "error", "message": f"File not found: {normalized}"}
+        
+        # 1. Get OLD chunks from cache
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        old_ctx = next(
+            (ctx for ctx in contexts 
+             if os.path.normpath(ctx.get("file_path", "")) == normalized),
+            None
+        )
+        old_hashes = {}
+        if old_ctx:
+            for chunk in old_ctx.get("chunks", []):
+                hid = chunk.get("hash_id")
+                if hid:
+                    old_hashes[hid] = chunk
+        
+        # 2. Generate NEW chunks from current file
+        from .chunking_engine import ChunkingEngine, detect_language
+        try:
+            with open(normalized, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            
+            lang = detect_language(normalized)
+            chunker = ChunkingEngine.get_chunker(lang)
+            code_chunks = chunker.chunk_file(content, normalized)
+            
+            new_chunks = []
+            for cc in code_chunks:
+                c_dict = cc.to_dict()
+                if not c_dict.get("summary"):
+                    c_dict["summary"] = f"Code unit: {c_dict.get('name', 'unnamed')}"
+                new_chunks.append(c_dict)
+        except Exception as e:
+            return {"status": "error", "message": f"Chunking failed: {str(e)}"}
+        
+        # 3. Compute hashes for new chunks (same logic as builder)
+        import re as _re
+        import hashlib as _hashlib
+        new_hashes = {}
+        for chunk in new_chunks:
+            if not chunk.get("hash_id") and chunk.get("content"):
+                norm_content = _re.sub(r'\s+', ' ', chunk["content"]).strip()
+                chunk["hash_id"] = _hashlib.sha256(norm_content.encode('utf-8')).hexdigest()
+            hid = chunk.get("hash_id")
+            if hid:
+                new_hashes[hid] = chunk
+        
+        # 4. Diff: unchanged, added, removed, modified
+        old_set = set(old_hashes.keys())
+        new_set = set(new_hashes.keys())
+        
+        unchanged_ids = old_set & new_set
+        added_ids = new_set - old_set
+        removed_ids = old_set - new_set
+        
+        # 5. Remove stale vectors
+        if removed_ids:
+            self.vector_store.delete_vectors(agent_id, list(removed_ids))
+        
+        # 6. Only embed & store the new/changed chunks
+        # We still store ALL chunks for the file context, but builder will skip
+        # embedding for chunks with existing vectors (hash_id match)
+        result = self.builder.process_file_chunks(
+            agent_id=agent_id,
+            file_path=normalized,
+            chunks=new_chunks,
+            language=lang,
+        )
+        
+        delta_info = {
+            "status": "delta_applied",
+            "file_path": normalized,
+            "chunks_added": len(added_ids),
+            "chunks_removed": len(removed_ids), 
+            "chunks_unchanged": len(unchanged_ids),
+            "total_chunks": len(new_chunks),
+            "embeddings_reused": len(unchanged_ids),
+            "embeddings_generated": len(added_ids),
+            "vectors_cleaned": len(removed_ids),
+            "_token_info": {
+                "hint": f"Delta update: reused {len(unchanged_ids)} embeddings, generated {len(added_ids)} new, removed {len(removed_ids)} stale"
+            }
+        }
+        return delta_info
+    
+    def cache_stats(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get comprehensive cache statistics with per-file freshness and recommendations.
+        Enhanced replacement for get_token_savings.
+        """
+        return self.store.get_detailed_cache_stats(agent_id)
+    
+    # =========================================================================
     # CRUD Operations (renamed for agent-facing tools)
     # =========================================================================
     
