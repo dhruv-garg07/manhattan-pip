@@ -1,0 +1,77 @@
+{
+  "57e12c65e981804c6da7bdc5e7be06d65e78691e849b8a949d4a25203eed1a98": {
+    "hash_id": "57e12c65e981804c6da7bdc5e7be06d65e78691e849b8a949d4a25203eed1a98",
+    "content": "def hello_world():\n    \"\"\"Prints hello.\"\"\"\n    print(\"Hello World\")",
+    "type": "function",
+    "name": "hello_world",
+    "start_line": 1,
+    "end_line": 3,
+    "language": "python",
+    "embedding_id": "57e12c65e981804c6da7bdc5e7be06d65e78691e849b8a949d4a25203eed1a98",
+    "token_count": 16,
+    "keywords": [
+      "code",
+      "hello_world",
+      "hello",
+      "function",
+      "world"
+    ],
+    "summary": "Code unit: hello_world"
+  },
+  "64279c0bd861029f4d0c557a560300c230ef0612dc64230d6c842688fe8452f2": {
+    "hash_id": "64279c0bd861029f4d0c557a560300c230ef0612dc64230d6c842688fe8452f2",
+    "content": "class Test:\n    def run(self):\n        pass",
+    "type": "class",
+    "name": "Test",
+    "start_line": 5,
+    "end_line": 7,
+    "language": "python",
+    "embedding_id": "64279c0bd861029f4d0c557a560300c230ef0612dc64230d6c842688fe8452f2",
+    "token_count": 10,
+    "keywords": [
+      "code",
+      "class",
+      "test",
+      "Test"
+    ],
+    "summary": "Code unit: Test"
+  },
+  "4e9276173833aa5fbe9dcd584f82d42a046f93795e128c48a6c9b98e7c1d461c": {
+    "hash_id": "4e9276173833aa5fbe9dcd584f82d42a046f93795e128c48a6c9b98e7c1d461c",
+    "content": "    def run(self):\n        pass",
+    "type": "method",
+    "name": "Test.run",
+    "start_line": 6,
+    "end_line": 7,
+    "language": "python",
+    "embedding_id": "4e9276173833aa5fbe9dcd584f82d42a046f93795e128c48a6c9b98e7c1d461c",
+    "token_count": 7,
+    "keywords": [
+      "test",
+      "Test.run",
+      "code",
+      "run",
+      "method"
+    ],
+    "summary": "Code unit: Test.run"
+  },
+  "c81db8b817a4b2790f4d44337997a1b68dc6a8fd08c0ac3f4dc9678f9372d73f": {
+    "hash_id": "c81db8b817a4b2790f4d44337997a1b68dc6a8fd08c0ac3f4dc9678f9372d73f",
+    "content": "def new_feature():\n    return \"new\"",
+    "type": "function",
+    "name": "new_feature",
+    "start_line": 9,
+    "end_line": 10,
+    "language": "python",
+    "embedding_id": "c81db8b817a4b2790f4d44337997a1b68dc6a8fd08c0ac3f4dc9678f9372d73f",
+    "token_count": 8,
+    "keywords": [
+      "new",
+      "new_feature",
+      "code",
+      "feature",
+      "function"
+    ],
+    "summary": "Code unit: new_feature"
+  }
+}

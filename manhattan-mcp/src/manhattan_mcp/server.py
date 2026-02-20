@@ -45,10 +45,6 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  list_dir            →  list_directory(path)                ║
 ║  view_file_outline   →  get_file_outline(file_path)         ║
 ║  grep_search         →  search_codebase(query)              ║
-║  grep_search (usage) →  cross_reference(symbol)             ║
-║  manual import trace →  dependency_graph(file_path)         ║
-║  reindex_file (full) →  delta_update(file_path)             ║
-║  get_token_savings   →  cache_stats()                       ║
 ╚══════════════════════════════════════════════════════════════╝
 
 AFTER modifying files → call index_file(file_path) to update the cache.

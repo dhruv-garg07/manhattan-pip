@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "manhattan-mcp"
-version = "0.1.50"
-description = "MCP Server for Manhattan Memory System - Give AI agents persistent memory"
+version = "0.2.1"
+description = "Manhattan MCP Server - Token-Efficient Codebase Navigation (GitMem) for AI Agents"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
