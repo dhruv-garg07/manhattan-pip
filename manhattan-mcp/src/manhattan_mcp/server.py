@@ -24,8 +24,8 @@ try:
 except ImportError:
     try:
         from gitmem_coding.coding_api import CodingAPI as CodingContextAPI
-    except ImportError as e: # Capture the exception
-        print(f"Warning: Could not import gitmem_coding. Coding context tools will be unavailable. Error: {e}", file=sys.stderr)
+    except ImportError:
+        print("Warning: Could not import gitmem_coding. Coding context tools will be unavailable.", file=sys.stderr)
         CodingContextAPI = None
 
 
@@ -497,8 +497,6 @@ if coding_api is not None:
             print(f"[{agent_id}] Auto-indexing {file_path} via AST parsing.", file=sys.stderr)
 
         result = coding_api.index_file(agent_id, file_path, chunks)
-        if isinstance(result, dict):
-            result["CANARY"] = "TWEET TWEET"
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -521,9 +519,9 @@ if coding_api is not None:
         agent_id = _normalize_agent_id(agent_id)
         
         if chunks:
-            print(f"[{agent_id}] RE-INDEX: Received {len(chunks)} semantic chunks for {file_path}")
+            print(f"[{agent_id}] RE-INDEX: Received {len(chunks)} semantic chunks for {file_path}", file=sys.stderr)
         else:
-            print(f"[{agent_id}] RE-INDEX: Auto-parsing {file_path}")
+            print(f"[{agent_id}] RE-INDEX: Auto-parsing {file_path}", file=sys.stderr)
 
         result = coding_api.reindex_file(agent_id, file_path, chunks)
         return json.dumps(result, indent=2)
