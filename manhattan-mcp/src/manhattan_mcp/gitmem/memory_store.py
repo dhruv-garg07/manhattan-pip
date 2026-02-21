@@ -27,6 +27,7 @@ Features:
 
 import os
 import json
+import sys
 import uuid
 import hashlib
 from datetime import datetime
@@ -226,7 +227,7 @@ class LocalMemoryStore:
                 if text:
                     self.vector_store.add_vector(agent_id, entry_id, text)
             except Exception as e:
-                print(f"[MemoryStore] Failed to generate vector for {entry_id}: {e}")
+                print(f"[MemoryStore] Failed to generate vector for {entry_id}: {e}", file=sys.stderr)
         
         # Log activity
         self._log_activity(agent_id, "mutation", "create", "memory", entry_id, "agent", agent_id)
@@ -369,9 +370,9 @@ class LocalMemoryStore:
                 from .vector_store import get_vector_store
                 # Use global singleton vector store
                 self._vector_store = get_vector_store(root_path=str(self.root_path))
-                print("[MemoryStore] Vector store initialized (singleton)")
+                print("[MemoryStore] Vector store initialized (singleton)", file=sys.stderr)
             except ImportError as e:
-                print(f"[MemoryStore] Vector store not available: {e}")
+                print(f"[MemoryStore] Vector store not available: {e}", file=sys.stderr)
                 self.enable_vectors = False
         return self._vector_store
     
@@ -396,9 +397,9 @@ class LocalMemoryStore:
                     vector_store=self.vector_store,
                     config=config
                 )
-                print("[MemoryStore] Hybrid retriever initialized (singleton)")
+                print("[MemoryStore] Hybrid retriever initialized (singleton)", file=sys.stderr)
             except ImportError as e:
-                print(f"[MemoryStore] Hybrid retriever not available: {e}")
+                print(f"[MemoryStore] Hybrid retriever not available: {e}", file=sys.stderr)
         return self._hybrid_retriever
     
     def hybrid_search_memory(
@@ -451,7 +452,7 @@ class LocalMemoryStore:
                 )
                 return results
             except Exception as e:
-                print(f"[MemoryStore] Hybrid search failed, falling back to keyword: {e}")
+                print(f"[MemoryStore] Hybrid search failed, falling back to keyword: {e}", file=sys.stderr)
         
         # Fallback to keyword search
         return self.search_memory(agent_id, query, top_k, memory_type)
@@ -476,7 +477,7 @@ class LocalMemoryStore:
             List of matching memories with semantic scores
         """
         if not self.enable_vectors or not self.vector_store:
-            print("[MemoryStore] Vectors not enabled, using keyword search")
+            print("[MemoryStore] Vectors not enabled, using keyword search", file=sys.stderr)
             return self.search_memory(agent_id, query, top_k, memory_type)
         
         memories = self._load_agent_data(agent_id, "memories")
@@ -496,7 +497,7 @@ class LocalMemoryStore:
                 top_k=top_k
             )
         except Exception as e:
-            print(f"[MemoryStore] Semantic search failed: {e}")
+            print(f"[MemoryStore] Semantic search failed: {e}", file=sys.stderr)
             return self.search_memory(agent_id, query, top_k, memory_type)
     
     def ensure_memory_vectors(self, agent_id: str) -> int:

@@ -162,7 +162,8 @@ Usage of this memory system is ADDITIVE. It should NOT block your normal ability
 try:
     import mcp_memory_server
     SERVER_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"[MCP Client] Error importing mcp_memory_server: {e}", file=sys.stderr)
     SERVER_AVAILABLE = False
 
 async def call_api(endpoint: str, payload: dict) -> dict:
@@ -241,10 +242,10 @@ async def call_api(endpoint: str, payload: dict) -> dict:
             # If we fall through here, either endpoint not mapped or func not found
             # Fallback to HTTP? Or error? 
             # If server is available but endpoint missing, HTTP might self-call and fail.
-            print(f"[MCP Client] Warning: Endpoint '{endpoint}' not found in server map. Falling back to HTTP.")
+            print(f"[MCP Client] Warning: Endpoint '{endpoint}' not found in server map. Falling back to HTTP.", file=sys.stderr)
             
         except Exception as e:
-            print(f"[MCP Client] Server-side execution error: {e}")
+            print(f"[MCP Client] Server-side execution error: {e}", file=sys.stderr)
             return {"ok": False, "error": f"Server-side execution failed: {str(e)}"}
 
     # --- HTTP Client Fallback ---

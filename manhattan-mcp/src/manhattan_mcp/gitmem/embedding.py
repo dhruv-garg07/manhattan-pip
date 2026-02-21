@@ -15,7 +15,9 @@ import hashlib
 import urllib.request
 import urllib.error
 import ssl
-from typing import List, Optional, Union, Dict, Any
+import re
+import sys
+from typing import List, Optional, Tuple, Dict, Any
 from pathlib import Path
 import threading
 import concurrent.futures
@@ -27,7 +29,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    print("[Embedding] numpy not available, using pure Python vectors")
+    print("[Embedding] numpy not available, using pure Python vectors", file=sys.stderr)
 
 
 class PythonVector:
@@ -181,8 +183,8 @@ class RemoteEmbeddingClient:
         self.ssl_context.verify_mode = ssl.CERT_NONE
 
         api_type = "Gradio" if self._is_gradio else "REST"
-        print(f"[Embedding] Using {api_type} API: {self.api_url}")
-        print(f"[Embedding] Dimension: {self.dimension}")
+        print(f"[Embedding] Using {api_type} API: {self.api_url}", file=sys.stderr)
+        print(f"[Embedding] Dimension: {self.dimension}", file=sys.stderr)
     
     def _load_cache(self):
         """Load embedding cache from disk."""
@@ -193,9 +195,9 @@ class RemoteEmbeddingClient:
                     data = json.load(f)
                     # Convert lists back to vectors
                     self._cache = {k: create_vector(v) for k, v in data.items()}
-                print(f"[Embedding] Loaded {len(self._cache)} cached embeddings")
+                print(f"[Embedding] Loaded {len(self._cache)} cached embeddings", file=sys.stderr)
         except Exception as e:
-            print(f"[Embedding] Failed to load cache: {e}")
+            print(f"[Embedding] Failed to load cache: {e}", file=sys.stderr)
     
     def _save_cache(self):
         """Save embedding cache to disk."""
@@ -214,7 +216,7 @@ class RemoteEmbeddingClient:
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f)
         except Exception as e:
-            print(f"[Embedding] Failed to save cache: {e}")
+            print(f"[Embedding] Failed to save cache: {e}", file=sys.stderr)
     
     def _get_cache_key(self, text: str) -> str:
         """Generate a cache key for a text."""
@@ -264,7 +266,7 @@ class RemoteEmbeddingClient:
         if not texts:
             return []
             
-        print(f"[Embedding] Batch embedding {len(texts)} texts with {max_workers} workers...")
+        print(f"[Embedding] Batch embedding {len(texts)} texts with {max_workers} workers...", file=sys.stderr)
         
         # Use ThreadPoolExecutor for parallel API calls
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -297,13 +299,13 @@ class RemoteEmbeddingClient:
                 return self._call_rest_api(text, headers)
             
         except urllib.error.HTTPError as e:
-            print(f"[Embedding] API HTTP error {e.code}: {e.reason}")
+            print(f"[Embedding] API HTTP error {e.code}: {e.reason}", file=sys.stderr)
             return zeros_vector(self.dimension)
         except urllib.error.URLError as e:
-            print(f"[Embedding] API URL error: {e.reason}")
+            print(f"[Embedding] API URL error: {e.reason}", file=sys.stderr)
             return zeros_vector(self.dimension)
         except Exception as e:
-            print(f"[Embedding] API request failed: {e}")
+            print(f"[Embedding] API request failed: {e}", file=sys.stderr)
             return zeros_vector(self.dimension)
     
     def _call_gradio_api(self, text: str, headers: dict):
@@ -376,7 +378,7 @@ class RemoteEmbeddingClient:
                 
                 time.sleep(0.1)
             
-            print("[Embedding] Gradio API timeout waiting for result")
+            print("[Embedding] Gradio API timeout waiting for result", file=sys.stderr)
             return zeros_vector(self.dimension)
         else:
             # Direct response (not two-step)

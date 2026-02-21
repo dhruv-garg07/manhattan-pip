@@ -52,8 +52,8 @@ load_dotenv()
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
-    print("Error: mcp package not installed. Install with: pip install mcp")
-    print("Or: uv add mcp")
+    print("Error: mcp package not installed. Install with: pip install mcp", file=sys.stderr)
+    print("Or: uv add mcp", file=sys.stderr)
     sys.exit(1)
 
 # Import SimpleMem components
@@ -61,8 +61,8 @@ try:
     from SimpleMem.main import create_system, SimpleMemSystem
     from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
 except ImportError as e:
-    print(f"Error importing SimpleMem: {e}")
-    print("Make sure SimpleMem module is available in the path")
+    print(f"Error importing SimpleMem: {e}", file=sys.stderr)
+    print("Make sure SimpleMem module is available in the path", file=sys.stderr)
     sys.exit(1)
 
 # Initialize FastMCP server
@@ -109,7 +109,7 @@ class McpAgentsService:
         
         if not supabase_url or not supabase_key:
             self.client = None
-            print("Warning: Supabase credentials not set. Agent management will work locally only.")
+            print("Warning: Supabase credentials not set. Agent management will work locally only.", file=sys.stderr)
         else:
             self.client = create_client(supabase_url, supabase_key)
     

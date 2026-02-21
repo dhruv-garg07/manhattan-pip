@@ -15,6 +15,7 @@ Features:
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 from datetime import datetime
@@ -155,7 +156,7 @@ class LocalVectorStore:
                     }
                     return data
             except Exception as e:
-                print(f"[VectorStore] Failed to load vectors: {e}")
+                print(f"[VectorStore] Failed to load vectors: {e}", file=sys.stderr)
         
         return {}
     
@@ -174,7 +175,7 @@ class LocalVectorStore:
                     k: create_vector(v) for k, v in vectors.items()
                 }
             except Exception as e:
-                print(f"[VectorStore] Failed to save vectors: {e}")
+                print(f"[VectorStore] Failed to save vectors: {e}", file=sys.stderr)
     
     def add_vector(self, agent_id: str, entry_id: str, text: str) -> Optional[List[float]]:
         """
@@ -205,7 +206,7 @@ class LocalVectorStore:
             return embedding_list
             
         except Exception as e:
-            print(f"[VectorStore] Failed to add vector: {e}")
+            print(f"[VectorStore] Failed to add vector: {e}", file=sys.stderr)
             return None
     
     def add_vectors_batch(
@@ -253,7 +254,7 @@ class LocalVectorStore:
         
         if added > 0:
             self._save_vectors(agent_id, vectors)
-            print(f"[VectorStore] Added {added} vectors for {agent_id}")
+            print(f"[VectorStore] Added {added} vectors for {agent_id}", file=sys.stderr)
         
         return added
     
@@ -307,7 +308,7 @@ class LocalVectorStore:
         try:
             query_embedding = self.embedding_client.embed(query)
         except Exception as e:
-            print(f"[VectorStore] Failed to embed query: {e}")
+            print(f"[VectorStore] Failed to embed query: {e}", file=sys.stderr)
             return []
         
         # Load vectors
@@ -575,7 +576,7 @@ class LocalVectorStore:
         if agent_id in self._vector_cache:
             del self._vector_cache[agent_id]
         
-        print(f"[VectorStore] Cleared vectors for {agent_id}")
+        print(f"[VectorStore] Cleared vectors for {agent_id}", file=sys.stderr)
 
 
 # Global instance (lazy initialization)
