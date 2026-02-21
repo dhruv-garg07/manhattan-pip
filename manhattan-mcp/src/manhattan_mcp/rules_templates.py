@@ -30,8 +30,18 @@ You MUST use Manhattan MCP tools for ALL file operations — no exceptions, rega
 | Read/view any file | `read_file_context` | `view_file`, `read_file`, `cat` |
 | Search code | `search_codebase` | `grep_search`, `file_search`, `grep` |
 | View file structure | `get_file_outline` | `view_file_outline` |
+| Find symbol usage | `cross_reference` | `grep_search`, `grep` |
+| Trace dependencies | `dependency_graph` | manual import tracing |
+| Browse files | `list_directory` | `ls`, `find`, `list_dir` |
 | After creating a file | `index_file` on the new file | nothing |
-| After editing a file | `index_file` on the edited file | nothing |
+| After editing a file | `delta_update` (or `index_file`) | nothing |
+
+## Advanced Navigation
+
+- Use `cross_reference` to find where functions/classes are used across the codebase.
+- Use `dependency_graph` to understand the import structure and call relationships.
+- Use `cache_stats` to check index health and get update recommendations.
+- Use `delta_update` for fast, incremental re-indexing after edits.
 
 ## Why this is mandatory
 
@@ -60,9 +70,12 @@ This project requires Manhattan MCP for ALL file operations.
 - You MUST use `read_file_context` instead of `Read`/`View` for reading files
 - You MUST use `search_codebase` instead of `Grep`/`Search` for searching
 - You MUST use `get_file_outline` instead of outline tools
-- You MUST call `index_file` after creating or editing ANY file
+- You MUST use `cross_reference` to find symbol usages (replaces Grep for symbols)
+- You MUST use `dependency_graph` to understand file relationships
+- You MUST use `list_directory` for efficient file browsing
+- You MUST call `delta_update` or `index_file` after creating or editing ANY file
 
-This keeps the project's code index up to date. Skipping these tools is a policy violation.
+Use `cache_stats` to see index health. This keeps the project's code index up to date. Skipping these tools is a policy violation.
 Only exception: use built-in read when you need exact line numbers for a diff.
 """
 
@@ -80,9 +93,12 @@ This project requires Manhattan MCP for ALL file operations — no exceptions re
 - You MUST use `read_file_context` instead of `view_file` for reading files
 - You MUST use `search_codebase` instead of `grep_search` for searching code
 - You MUST use `get_file_outline` instead of `view_file_outline`
-- You MUST call `index_file` after creating or editing ANY file
+- You MUST use `cross_reference` for finding symbol usages
+- You MUST use `dependency_graph` for tracing imports/calls
+- You MUST use `list_directory` instead of standard listing tools
+- You MUST call `delta_update` (preferred) or `index_file` after edits
 
-This is a project policy to keep the code index current. Not optional.
+Use `cache_stats` for recommendations. This is a project policy to keep the code index current. Not optional.
 Only exception: use `view_file` when you need exact line numbers for a code edit.
 """
 
@@ -100,9 +116,12 @@ This project requires Manhattan MCP for ALL file operations.
 - You MUST use `read_file_context` instead of `view_file` for reading files
 - You MUST use `search_codebase` instead of `grep_search` for searching
 - You MUST use `get_file_outline` instead of `view_file_outline`
-- You MUST call `index_file` after creating or editing ANY file
+- You MUST use `cross_reference` for all symbol searches
+- You MUST use `dependency_graph` to understand architecture
+- You MUST use `list_directory` to explore indexed files
+- You MUST call `delta_update` or `index_file` after creating or editing ANY file
 
-This is a project policy. Skipping these tools breaks the project's code index.
+Use `cache_stats` to monitor index health. This is a project policy. Skipping these tools breaks the project's code index.
 Only exception: use built-in read when you need exact line numbers for a diff.
 """
 
@@ -119,9 +138,12 @@ This project requires Manhattan MCP for ALL file operations — no exceptions re
 - You MUST use `mcp_manhattan_pip_read_file_context` instead of `read_file` or `file_search`
 - You MUST use `mcp_manhattan_pip_search_codebase` instead of searching/grepping
 - You MUST use `mcp_manhattan_pip_get_file_outline` for file structure
-- You MUST call `mcp_manhattan_pip_index_file` after creating or editing ANY file
+- You MUST use `mcp_manhattan_pip_cross_reference` to find symbol usages
+- You MUST use `mcp_manhattan_pip_dependency_graph` for import maps
+- You MUST use `mcp_manhattan_pip_list_directory` for navigation
+- You MUST call `mcp_manhattan_pip_delta_update` (preferred) or `index_file` after edits
 
-This keeps the project's code index up to date. It is a project policy, not optional.
+Use `mcp_manhattan_pip_cache_stats` for health checks. This keeps the project's code index up to date. It is a project policy, not optional.
 The only exception: use built-in file read when you need exact line numbers for applying a patch.
 """
 
