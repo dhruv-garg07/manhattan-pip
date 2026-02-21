@@ -204,6 +204,38 @@ class CodingAPI:
         original_tokens = self._estimate_file_tokens(normalized)
         outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
         
+        # Optimization for worst-case scenarios (many tiny functions)
+        if original_tokens > 0 and outline_tokens > original_tokens * 0.3:
+            # 1. Drop signatures, which are usually the longest part
+            for item in outline_items:
+                item.pop('signature', None)
+            outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+            
+            # 2. If still too large, drop line numbers
+            if outline_tokens > original_tokens * 0.5:
+                for item in outline_items:
+                    item.pop('start_line', None)
+                    item.pop('end_line', None)
+                outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+                
+            # 3. If outline is STILL too large, just group names by type
+            if outline_tokens > original_tokens * 0.8:
+                grouped = {}
+                for item in outline_items:
+                    t = item.get('type', 'unknown')
+                    grouped.setdefault(t, []).append(item.get('name', 'unknown'))
+                
+                compact_outline = []
+                for t, names in grouped.items():
+                    name_str = ", ".join(names)
+                    if len(name_str) > 800:
+                        name_str = name_str[:800] + "... (truncated)"
+                    compact_outline.append({"type": f"grouped {t}s", "names": name_str})
+                outline_items = compact_outline
+                outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+        
+        hint_pct = min(100, max(1, int(outline_tokens / max(1, original_tokens) * 100))) if original_tokens > 0 else 100
+        
         return {
             "status": "ok",
             "file_path": normalized,
@@ -214,7 +246,7 @@ class CodingAPI:
                 "tokens_this_call": outline_tokens,
                 "tokens_if_raw_read": original_tokens,
                 "tokens_saved": max(0, original_tokens - outline_tokens),
-                "hint": f"Outline uses ~{min(100, max(1, int(outline_tokens / max(1, original_tokens) * 100)))}% of raw file tokens"
+                "hint": f"Outline uses ~{hint_pct}% of raw file tokens"
             }
         }
     
