@@ -263,6 +263,16 @@ class CodingContextStore:
         contexts = self._load_agent_data(agent_id, "file_contexts")
         existing_idx = next((i for i, c in enumerate(contexts) if os.path.normpath(c.get("file_path", "")) == normalized_path), None)
         
+        # Compute content hash for freshness detection
+        file_content_hash = ""
+        try:
+            if os.path.exists(normalized_path):
+                with open(normalized_path, 'r', encoding='utf-8', errors='replace') as f:
+                    file_content = f.read()
+                file_content_hash = hashlib.sha256(file_content.encode('utf-8')).hexdigest()
+        except Exception:
+            pass
+
         context_data = {
             "file_path": normalized_path,
             "file_name": file_name,
@@ -273,7 +283,8 @@ class CodingContextStore:
             "session_id": session_id,
             "last_accessed_at": now,
             "token_estimate": total_tokens,
-            "file_modified_at": now # Approximation
+            "file_modified_at": now, # Approximation
+            "content_hash": file_content_hash,  # SHA-256 for freshness checks
         }
 
         if existing_idx is not None:

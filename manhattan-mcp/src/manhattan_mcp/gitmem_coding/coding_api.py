@@ -193,21 +193,16 @@ class CodingAPI:
                 "start_line": chunk.get("start_line", 0),
                 "end_line": chunk.get("end_line", 0),
             }
-            # Include summary if available (compact)
-            if chunk.get("summary"):
-                item["summary"] = chunk["summary"]
             # Include signature (content first line only)
             content = chunk.get("content", "")
             if content:
                 first_line = content.split("\n")[0].strip()
                 item["signature"] = first_line
-            # Include keywords
-            if chunk.get("keywords"):
-                item["keywords"] = chunk["keywords"]
+                
             outline_items.append(item)
         
         original_tokens = self._estimate_file_tokens(normalized)
-        outline_tokens = int(len(json.dumps(outline_items)) * 0.25)
+        outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
         
         return {
             "status": "ok",
@@ -258,6 +253,15 @@ class CodingAPI:
         Find all references to a symbol across indexed files.
         Replaces grep_search for symbol usage lookups.
         """
+        # Guard: empty or whitespace-only symbols would match everything
+        if not symbol or not symbol.strip():
+            return {
+                "symbol": symbol,
+                "total_references": 0,
+                "files_matched": 0,
+                "references": [],
+                "_token_info": {"hint": "Empty symbol — no references to find"}
+            }
         result = self.store.find_symbol_references(agent_id, symbol)
         result["_token_info"] = {
             "hint": f"Found {result['total_references']} references across {result['files_matched']} files — no grep needed"
