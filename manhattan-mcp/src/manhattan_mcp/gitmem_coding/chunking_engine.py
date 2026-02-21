@@ -102,79 +102,86 @@ class PythonChunker(ChunkingEngine):
             tree = ast.parse(content)
             lines = content.splitlines()
             
-            # Helper to extract source segment
-            def get_segment(node) -> str:
-                # ast lines are 1-indexed
-                start = node.lineno - 1
-                end = node.end_lineno # inclusive
-                return "\n".join(lines[start:end])
+            def get_segment(start_line, end_line) -> str:
+                return "\n".join(lines[start_line-1:end_line])
 
-            for node in tree.body:
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    chunk_content = get_segment(node)
+            def process_nodes(nodes, prefix=""):
+                buffer = []
+                
+                def flush():
+                    if not buffer:
+                        return
+                    start = buffer[0].lineno
+                    end = max(n.end_lineno for n in buffer)
+                    
+                    types = set()
+                    names = []
+                    for n in buffer:
+                        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            types.add("function" if not prefix else "method")
+                            names.append(n.name)
+                        elif isinstance(n, ast.ClassDef):
+                            types.add("class")
+                            names.append(n.name)
+                        elif isinstance(n, (ast.Import, ast.ImportFrom)):
+                            types.add("import")
+                        elif isinstance(n, ast.Assign):
+                            types.add("assignment")
+                    
+                    if not types:
+                        types.add("block")
+                    
+                    t_list = list(types)
+                    chunk_type = t_list[0] if len(t_list) == 1 else "mixed"
+                    if not names:
+                        names = ["block"]
+                        
+                    name = ", ".join(names)
+                    if len(name) > 60:
+                        name = name[:57] + "..."
+                    
+                    if prefix:
+                        name = f"{prefix}.[{name}]" if len(names) > 1 else f"{prefix}.{name}"
+                        
                     chunks.append(self._create_chunk(
-                        content=chunk_content,
-                        chunk_type="function",
-                        name=node.name,
-                        start_line=node.lineno,
-                        end_line=node.end_lineno,
+                        content=get_segment(start, end),
+                        chunk_type=chunk_type,
+                        name=name,
+                        start_line=start,
+                        end_line=end,
                         language="python"
                     ))
-                elif isinstance(node, ast.ClassDef):
-                    chunk_content = get_segment(node)
-                    chunks.append(self._create_chunk(
-                        content=chunk_content,
-                        chunk_type="class",
-                        name=node.name,
-                        start_line=node.lineno,
-                        end_line=node.end_lineno,
-                        language="python"
-                    ))
-                    # Chunk methods inside the class
-                    for item in node.body:
-                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                            method_content = get_segment(item)
-                            chunks.append(self._create_chunk(
-                                content=method_content,
-                                chunk_type="method",
-                                name=f"{node.name}.{item.name}",
-                                start_line=item.lineno,
-                                end_line=item.end_lineno,
-                                language="python"
-                            ))
-                elif isinstance(node, (ast.Import, ast.ImportFrom)):
-                    # Group imports? For now just take individual
-                    chunk_content = get_segment(node)
-                    chunks.append(self._create_chunk(
-                        content=chunk_content,
-                        chunk_type="import",
-                        name="imports",
-                        start_line=node.lineno,
-                        end_line=node.end_lineno,
-                        language="python"
-                    ))
-                elif isinstance(node, ast.Assign):
-                    # Capture top-level assignments (constants/config)
-                    # Only if simple (target is Name)
-                    if any(isinstance(t, ast.Name) for t in node.targets):
-                        chunk_content = get_segment(node)
+                    buffer.clear()
+
+                for node in nodes:
+                    if not hasattr(node, 'lineno') or not hasattr(node, 'end_lineno'):
+                        continue
+                        
+                    if isinstance(node, ast.ClassDef):
+                        flush()
                         chunks.append(self._create_chunk(
-                            content=chunk_content,
-                            chunk_type="assignment",
-                            name="constant",
+                            content=get_segment(node.lineno, node.end_lineno),
+                            chunk_type="class",
+                            name=node.name,
                             start_line=node.lineno,
                             end_line=node.end_lineno,
                             language="python"
                         ))
-                
-                # We can also capture imports as a block?
-                
-            # If no structural chunks found (e.g. script), fallback to file
+                        process_nodes(node.body, prefix=node.name)
+                    else:
+                        buffer.append(node)
+                        current_lines = buffer[-1].end_lineno - buffer[0].lineno + 1
+                        if current_lines >= 100:
+                            flush()
+                            
+                flush()
+
+            process_nodes(tree.body)
+            
             if not chunks:
                 return TextChunker().chunk_file(content, file_path)
                 
             return chunks
 
         except SyntaxError:
-            # Fallback if parse fails
             return TextChunker().chunk_file(content, file_path)
