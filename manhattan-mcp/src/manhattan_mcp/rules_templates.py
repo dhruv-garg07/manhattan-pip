@@ -27,7 +27,7 @@ You MUST use Manhattan MCP tools for ALL file operations — no exceptions, rega
 
 | Action | You MUST use | NOT this |
 |--------|-------------|----------|
-| Read/view any file | `read_file_context` | `view_file`, `read_file`, `cat` |
+| Read code context | `summarize_context(detailed)` | `view_file`, `cat` |
 | Search code | `search_codebase` | `grep_search`, `file_search`, `grep` |
 | View file structure | `get_file_outline` | `view_file_outline` |
 | Find symbol usage | `cross_reference` | `grep_search`, `grep` |
@@ -67,7 +67,7 @@ CLAUDE_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations.
 
-- You MUST use `read_file_context` instead of `Read`/`View` for reading files
+- You MUST use `summarize_context` (detailed) or `get_file_outline` for reading context
 - You MUST use `search_codebase` instead of `Grep`/`Search` for searching
 - You MUST use `get_file_outline` instead of outline tools
 - You MUST use `cross_reference` to find symbol usages (replaces Grep for symbols)
@@ -90,7 +90,7 @@ GEMINI_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
 
-- You MUST use `read_file_context` instead of `view_file` for reading files
+- You MUST use `summarize_context` (detailed) or `get_file_outline` for context
 - You MUST use `search_codebase` instead of `grep_search` for searching code
 - You MUST use `get_file_outline` instead of `view_file_outline`
 - You MUST use `cross_reference` for finding symbol usages
@@ -113,7 +113,7 @@ WINDSURF_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations.
 
-- You MUST use `read_file_context` instead of `view_file` for reading files
+- You MUST use `summarize_context` or `get_file_outline` for reading context
 - You MUST use `search_codebase` instead of `grep_search` for searching
 - You MUST use `get_file_outline` instead of `view_file_outline`
 - You MUST use `cross_reference` for all symbol searches
@@ -135,7 +135,7 @@ COPILOT_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
 
-- You MUST use `mcp_manhattan_pip_read_file_context` instead of `read_file` or `file_search`
+- You MUST use `mcp_manhattan_pip_summarize_context` or `get_file_outline` for context
 - You MUST use `mcp_manhattan_pip_search_codebase` instead of searching/grepping
 - You MUST use `mcp_manhattan_pip_get_file_outline` for file structure
 - You MUST use `mcp_manhattan_pip_cross_reference` to find symbol usages

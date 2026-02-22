@@ -22,17 +22,16 @@ class CodingAPI:
     High-level API for coding context storage.
     
     VFS Navigation Tools (for MCP):
-    1. read_file_context(file_path) — cached read with auto-index
-    2. get_file_outline(file_path) — structural outline only
-    3. list_directory(path) — browse indexed files
-    4. search_codebase(query) — hybrid semantic+keyword search
-    5. get_token_savings() — savings report
+    1. get_file_outline(file_path) — structural outline only
+    2. list_directory(path) — browse indexed files
+    3. search_codebase(query) — hybrid semantic+keyword search
+    4. get_token_savings() — savings report
     
     CRUD Operations:
-    6. index_file(file_path) — index/create
-    7. reindex_file(file_path) — re-index/update
-    8. remove_index(file_path) — delete
-    9. list_indexed_files() — list all
+    5. index_file(file_path) — index/create
+    6. reindex_file(file_path) — re-index/update
+    7. remove_index(file_path) — delete
+    8. list_indexed_files() — list all
     """
     
     def __init__(self, root_path: str = "./.gitmem_coding"):
@@ -62,87 +61,6 @@ class CodingAPI:
     # =========================================================================
     # VFS Navigation Tools (NEW — for agent-facing MCP tools)
     # =========================================================================
-    
-    def read_file_context(self, agent_id: str, file_path: str) -> Dict[str, Any]:
-        """
-        Read a file's compressed context from cache, or auto-index if not cached.
-        
-        Returns:
-            Dict with compressed context (chunks, outline, metadata), token info.
-        """
-        start_t = time.perf_counter()
-        normalized = os.path.normpath(file_path)
-        
-        # 1. Check cache
-        cached = self.store.retrieve_file_context(agent_id, normalized)
-        
-        if cached.get("status") == "cache_hit":
-            # Check if stale — if so, drop down to re-index
-            if cached.get("freshness") != "stale":
-                # Calculate token savings
-                original_tokens = self._estimate_file_tokens(normalized)
-                cached_tokens = sum(
-                    len(str(c)) // 4 
-                    for c in cached.get("code_flow", {}).get("tree", [])
-                ) if cached.get("code_flow") else 0
-                
-                self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
-                return {
-                    "status": "cache_hit",
-                    "freshness": cached.get("freshness", "unknown"),
-                    "file_path": normalized,
-                    "code_flow": cached.get("code_flow", {}),
-                    "message": f"Returning compressed context from cache.",
-                    "_token_info": {
-                        "tokens_this_call": cached_tokens,
-                        "tokens_if_raw_read": original_tokens,
-                        "tokens_saved": max(0, original_tokens - cached_tokens),
-                        "hint": f"Saved ~{max(0, original_tokens - cached_tokens)} tokens by using cached context"
-                    }
-                }
-            # If stale, we continue to Phase 2 (Auto-index)
-        
-        # 2. Cache miss — read real file and auto-index
-        if not os.path.exists(normalized):
-            return {
-                "status": "error",
-                "message": f"File not found: {normalized}",
-                "file_path": normalized
-            }
-        
-        try:
-            with open(normalized, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-            
-            original_tokens = int(len(content) * 0.25)
-            
-            # Auto-index the file
-            index_result = self.index_file(agent_id, normalized)
-            
-            # Now retrieve the cached version
-            cached = self.store.retrieve_file_context(agent_id, normalized)
-            code_flow = cached.get("code_flow", {}) if cached.get("status") == "cache_hit" else {}
-            
-            cached_tokens = sum(
-                len(str(c)) // 4 
-                for c in code_flow.get("tree", [])
-            ) if code_flow else original_tokens
-            
-            self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
-            return {
-                "status": "auto_indexed",
-                "file_path": normalized,
-                "code_flow": code_flow,
-                "message": f"File was not cached. Auto-indexed and returning compressed context.",
-                "_token_info": {
-                    "tokens_this_call": cached_tokens,
-                    "tokens_if_raw_read": original_tokens,
-                    "tokens_saved": max(0, original_tokens - cached_tokens),
-                    "hint": f"File auto-indexed. Future reads will save ~{max(0, original_tokens - cached_tokens)} tokens."
-                }
-            }
-        except Exception as e:
-            return {"status": "error", "message": f"Failed to read file: {str(e)}"}
     
     def get_file_outline(self, agent_id: str, file_path: str) -> Dict[str, Any]:
         """

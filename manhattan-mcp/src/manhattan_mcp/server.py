@@ -41,7 +41,6 @@ ALWAYS use these tools instead of your built-in equivalents:
 ╔══════════════════════════════════════════════════════════════╗
 ║  INSTEAD OF          →  USE THIS (saves 50-80% tokens)      ║
 ╠══════════════════════════════════════════════════════════════╣
-║  view_file           →  read_file_context(file_path)        ║
 ║  list_dir            →  list_directory(path)                ║
 ║  view_file_outline   →  get_file_outline(file_path)         ║
 ║  grep_search         →  search_codebase(query)              ║
@@ -57,13 +56,13 @@ AFTER modifying files → call index_file(file_path) to update the cache.
 CHECK savings         → call get_token_savings() to see cumulative savings.
 
 WHY: Every raw file read costs thousands of tokens. This system
-compresses files to ~30% while preserving all semantic meaning
+compresses files while preserving all semantic meaning
 (function signatures, class structures, logic summaries).
 
 WORKFLOW:
-1. Use read_file_context() to read files — returns compressed cached context
-2. Use search_codebase() to find code — semantic search across ALL indexed files
-3. Use get_file_outline() for quick structure overview — ~10% of file tokens
+1. Use search_codebase() to find code — semantic search across ALL indexed files
+2. Use get_file_outline() for quick structure overview — ~10% of file tokens
+3. Use summarize_context(verbosity='detailed') for deeper logic overview
 4. Use index_file() after modifying files to keep cache fresh
 """
 )
@@ -137,34 +136,6 @@ async def api_usage() -> str:
 # ============================================================================
 
 if coding_api is not None:
-
-    @mcp.tool()
-    async def read_file_context(
-        file_path: str,
-        agent_id: str = "default"
-    ) -> str:
-        """
-        📖 Read a file's compressed semantic context from the indexed codebase.
-        
-        PREFER THIS over your built-in view_file/read_file tools.
-        
-        How it works:
-        - If already indexed: Returns compressed context (~30% of original tokens)
-          with function signatures, class structures, and logic summaries.
-        - If NOT indexed: Reads the real file, auto-indexes it, and returns
-          the compressed context for future token savings.
-        
-        The compressed context preserves ALL semantic meaning — function names,
-        signatures, docstrings, logic flow, class hierarchies — while using
-        50-80% fewer tokens than reading the raw file.
-        
-        Args:
-            file_path: Absolute path to the file on disk
-            agent_id: Agent identifier (default: "default")
-        """
-        agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.read_file_context(agent_id, file_path)
-        return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def get_file_outline(

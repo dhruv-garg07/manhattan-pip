@@ -235,59 +235,15 @@ def function_{i}(x, y, z):
     r = check_no_crash("index with empty-content chunks", api.index_file, AGENT, "virtual/empty_content.py", empty_chunks)
 
     # ────────────────────────────────────────────────────────────────────────
-    # SECTION 4: read_file_context — Cache Behavior & Edge Cases
+    # SECTION 4: summarize_context — Compressed Reading
     # ────────────────────────────────────────────────────────────────────────
-    section("4. read_file_context — Cache & Edge Cases")
+    section("4. summarize_context — Compressed Reading")
 
-    # 4a: Cache hit on indexed file
-    r = check_no_crash("read server.py (should be cache hit)", api.read_file_context, AGENT, REAL_FILES["server"])
+    # 4a: Detailed summary
+    r = check_no_crash("detailed summary of server.py", api.summarize_context, AGENT, REAL_FILES["server"], "detailed")
     if r:
-        check("cache hit status", r.get("status") == "cache_hit", f"Got: {r.get('status')}")
-        check("has code_flow", bool(r.get("code_flow")), "Missing code_flow")
-        check("has _token_info", "_token_info" in r, "Missing _token_info")
-        ti = r.get("_token_info", {})
-        check("tokens_saved >= 0", ti.get("tokens_saved", -1) >= 0, f"Got: {ti.get('tokens_saved')}")
-        check("tokens_if_raw_read > 0", ti.get("tokens_if_raw_read", 0) > 0,
-              f"Got: {ti.get('tokens_if_raw_read')}")
-
-    # 4b: Auto-index on unindexed file
-    # Create a fresh file not yet indexed
-    fresh_path = create_temp_file("fresh_auto.py", """
-def auto_indexed_func(x):
-    return x * 2
-
-class AutoClass:
-    def method(self):
-        return "auto"
-""")
-    r = check_no_crash("read fresh file (auto-index)", api.read_file_context, AGENT, fresh_path)
-    if r:
-        check("auto-indexed status", r.get("status") == "auto_indexed", f"Got: {r.get('status')}")
-
-    # 4c: Second read should be cache hit
-    r = check_no_crash("re-read fresh file (cache hit)", api.read_file_context, AGENT, fresh_path)
-    if r:
-        check("second read is cache_hit", r.get("status") == "cache_hit", f"Got: {r.get('status')}")
-
-    # 4d: Non-existent file
-    r = check_no_crash("read non-existent file", api.read_file_context, AGENT, "/no/such/file.py")
-    if r:
-        check("non-existent returns error", r.get("status") == "error", f"Got: {r.get('status')}")
-
-    # 4e: Read Unicode file
-    r = check_no_crash("read Unicode file", api.read_file_context, AGENT, unicode_path)
-    if r:
-        check("Unicode file readable", r.get("status") in ("cache_hit", "auto_indexed"),
-              f"Got: {r.get('status')}")
-
-    # 4f: Token compression sanity check on large file
-    r = check_no_crash("read large file (compression check)", api.read_file_context, AGENT, large_path)
-    if r and r.get("_token_info"):
-        ti = r["_token_info"]
-        raw = ti.get("tokens_if_raw_read", 0)
-        saved = ti.get("tokens_saved", 0)
-        check("large file has positive token savings", saved > 0,
-              f"Raw={raw}, Saved={saved}")
+        check("summary status ok", r.get("status") == "ok", f"Got: {r.get('status')}")
+        check("has chunks", "chunks" in r, "Missing chunks in detailed summary")
 
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 5: get_file_outline
@@ -424,10 +380,10 @@ class AutoClass:
             check("ref has match_reason", "match_reason" in ref)
 
     # 8b: Known function
-    r = check_no_crash("xref: read_file_context", api.cross_reference, AGENT, "read_file_context")
+    r = check_no_crash("xref: get_file_outline", api.cross_reference, AGENT, "get_file_outline")
     if r:
-        check("read_file_context found refs", r.get("total_references", 0) > 0,
-              f"Got {r.get('total_references')} refs")
+        check("get_file_outline found refs", r.get("total_references", 0) > 0,
+              f"Got: {r.get('total_references')}")
 
     # 8c: Non-existent symbol
     r = check_no_crash("xref: NonExistentSymbol12345", api.cross_reference, AGENT, "NonExistentSymbol12345")
@@ -851,9 +807,9 @@ class WorkflowService:
         return {"status": "ok", "data": raw}
 """)
     idx = check_no_crash("WF-A: index", api.index_file, AGENT, wf_path)
-    rd = check_no_crash("WF-A: read", api.read_file_context, AGENT, wf_path)
+    rd = check_no_crash("WF-A: summarize", api.summarize_context, AGENT, wf_path, "detailed")
     if rd:
-        check("WF-A: read is cache_hit", rd.get("status") == "cache_hit")
+        check("WF-A: read is ok", rd.get("status") == "ok")
     sr = check_no_crash("WF-A: search for 'validate request'", api.search_codebase, AGENT, "validate request", top_k=3)
     ol = check_no_crash("WF-A: outline", api.get_file_outline, AGENT, wf_path)
     if ol:

@@ -733,7 +733,7 @@ class CodingContextStore:
             )
         if total_cache_hits == 0 and len(contexts) > 0:
             recommendations.append(
-                "No cache hits recorded yet — use read_file_context instead of view_file"
+                "No cache hits recorded yet — use summarize_context instead of view_file"
             )
         
         return {
