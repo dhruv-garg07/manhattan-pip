@@ -79,19 +79,19 @@ class CodingAPI:
         if cached.get("status") == "cache_hit":
             # Check if stale — if so, drop down to re-index
             if cached.get("freshness") != "stale":
-                # Build compact outline from stored chunks instead of verbose tree
-                compact_outline = self._build_compact_outline(agent_id, normalized)
-                
-                # Calculate token savings based on actual output size
+                # Calculate token savings
                 original_tokens = self._estimate_file_tokens(normalized)
-                cached_tokens = int(len(json.dumps(compact_outline, separators=(',', ':'))) * 0.25)
+                cached_tokens = sum(
+                    len(str(c)) // 4 
+                    for c in cached.get("code_flow", {}).get("tree", [])
+                ) if cached.get("code_flow") else 0
                 
                 self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
                 return {
                     "status": "cache_hit",
                     "freshness": cached.get("freshness", "unknown"),
                     "file_path": normalized,
-                    "code_flow": compact_outline,
+                    "code_flow": cached.get("code_flow", {}),
                     "message": f"Returning compressed context from cache.",
                     "_token_info": {
                         "tokens_this_call": cached_tokens,
@@ -119,17 +119,20 @@ class CodingAPI:
             # Auto-index the file
             index_result = self.index_file(agent_id, normalized)
             
-            # Build compact outline from stored chunks
-            compact_outline = self._build_compact_outline(agent_id, normalized)
+            # Now retrieve the cached version
+            cached = self.store.retrieve_file_context(agent_id, normalized)
+            code_flow = cached.get("code_flow", {}) if cached.get("status") == "cache_hit" else {}
             
-            # Calculate based on actual output size
-            cached_tokens = int(len(json.dumps(compact_outline, separators=(',', ':'))) * 0.25)
+            cached_tokens = sum(
+                len(str(c)) // 4 
+                for c in code_flow.get("tree", [])
+            ) if code_flow else original_tokens
             
             self._record_perf("retrieval", (time.perf_counter() - start_t) * 1000)
             return {
                 "status": "auto_indexed",
                 "file_path": normalized,
-                "code_flow": compact_outline,
+                "code_flow": code_flow,
                 "message": f"File was not cached. Auto-indexed and returning compressed context.",
                 "_token_info": {
                     "tokens_this_call": cached_tokens,
@@ -272,34 +275,6 @@ class CodingAPI:
         except Exception:
             pass
         return 0
-    
-    def _build_compact_outline(self, agent_id: str, file_path: str) -> list:
-        """
-        Build a compact outline from stored chunks — replaces the verbose code_flow tree.
-        Returns a clean list of {name, type, lines} entries.
-        """
-        contexts = self.store._load_agent_data(agent_id, "file_contexts")
-        found = next(
-            (ctx for ctx in contexts
-             if os.path.normpath(ctx.get("file_path", "")) == file_path),
-            None
-        )
-        if not found:
-            return []
-        
-        outline = []
-        for ch in found.get("chunks", []):
-            entry = {
-                "name": ch.get("name", "unknown"),
-                "type": ch.get("type", "block"),
-                "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
-            }
-            # Include summary only if it's meaningful (not just "Code unit: X")
-            summary = ch.get("summary", "")
-            if summary and not summary.startswith("Code unit:"):
-                entry["summary"] = summary
-            outline.append(entry)
-        return outline
     
     # =========================================================================
     # Tier 1 Features: Cross-Reference, Dependency Graph, Delta Update, Stats
@@ -634,14 +609,13 @@ class CodingAPI:
                 "total_chunks": len(detailed_chunks),
             }
         
-        else:  # "normal" — default: return compact outline
-            compact_outline = self._build_compact_outline(agent_id, normalized)
+        else:  # "normal" — default: return code_flow tree
             return {
                 "status": "ok",
                 "verbosity": "normal",
                 "file": file_name,
                 "language": language,
-                "code_flow": compact_outline,
+                "code_flow": cached.get("code_flow", {}),
                 "freshness": cached.get("freshness", "unknown"),
             }
     

@@ -79,118 +79,16 @@ class ChunkingEngine:
 
 
 class TextChunker(ChunkingEngine):
-    """Regex-based chunker for non-Python files (C, JS, Go, etc.).
-    
-    Detects function/method boundaries using common patterns.
-    Falls back to splitting every ~80 lines if no patterns found.
-    """
-    
-    # Patterns for function-like definitions across languages
-    _FUNC_PATTERNS = [
-        # C/C++/Java/Go: type name(args) {
-        re.compile(r'^[\w\s\*]+\s+(\w+)\s*\([^)]*\)\s*\{?\s*$', re.MULTILINE),
-        # JavaScript/TypeScript: function name(args) / const name = (args) =>
-        re.compile(r'^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)', re.MULTILINE),
-        re.compile(r'^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\(', re.MULTILINE),
-        # Go: func name(args)
-        re.compile(r'^\s*func\s+(?:\([^)]*\)\s+)?(\w+)\s*\(', re.MULTILINE),
-        # Rust: fn name(args)
-        re.compile(r'^\s*(?:pub\s+)?(?:async\s+)?fn\s+(\w+)', re.MULTILINE),
-        # Ruby: def name
-        re.compile(r'^\s*def\s+(\w+)', re.MULTILINE),
-        # Class declarations
-        re.compile(r'^\s*(?:export\s+)?(?:abstract\s+)?class\s+(\w+)', re.MULTILINE),
-        # Struct/enum declarations
-        re.compile(r'^\s*(?:typedef\s+)?(?:struct|enum)\s+(\w+)', re.MULTILINE),
-    ]
+    """Fallback chunker treating the whole file as one chunk or splitting by paragraphs."""
     
     def chunk_file(self, content: str, file_path: str = "") -> List[CodeChunk]:
-        lines = content.splitlines()
-        total_lines = len(lines)
-        
-        if total_lines < 50:
-            # Small files: return as single chunk
-            return [self._create_chunk(
-                content=content,
-                chunk_type="file",
-                name=file_path.split("/")[-1] if file_path else "unknown",
-                start_line=1,
-                end_line=total_lines,
-                language="text"
-            )]
-        
-        # Find function/class boundaries
-        boundaries = []  # list of (line_number, name, type)
-        for pattern in self._FUNC_PATTERNS:
-            for match in pattern.finditer(content):
-                line_num = content[:match.start()].count('\n') + 1
-                name = match.group(1) if match.lastindex else "block"
-                match_text = match.group(0).strip()
-                chunk_type = "class" if "class " in match_text or "struct " in match_text else "function"
-                boundaries.append((line_num, name, chunk_type))
-        
-        # Deduplicate and sort by line number
-        boundaries = sorted(set(boundaries), key=lambda x: x[0])
-        
-        if not boundaries:
-            # No patterns found: split every ~80 lines
-            chunks = []
-            chunk_size = 80
-            for start in range(0, total_lines, chunk_size):
-                end = min(start + chunk_size, total_lines)
-                segment = "\n".join(lines[start:end])
-                chunks.append(self._create_chunk(
-                    content=segment,
-                    chunk_type="block",
-                    name=f"block_{start+1}_{end}",
-                    start_line=start + 1,
-                    end_line=end,
-                    language="text"
-                ))
-            return chunks
-        
-        # Split file at function boundaries
-        chunks = []
-        
-        # Add header chunk if first boundary isn't at the start
-        if boundaries[0][0] > 5:
-            header_end = boundaries[0][0] - 1
-            header_content = "\n".join(lines[:header_end])
-            chunks.append(self._create_chunk(
-                content=header_content,
-                chunk_type="block",
-                name="header",
-                start_line=1,
-                end_line=header_end,
-                language="text"
-            ))
-        
-        # Create chunks between boundaries
-        for i, (line_num, name, chunk_type) in enumerate(boundaries):
-            if i + 1 < len(boundaries):
-                end_line = boundaries[i + 1][0] - 1
-            else:
-                end_line = total_lines
-            
-            start_idx = line_num - 1
-            end_idx = end_line
-            segment = "\n".join(lines[start_idx:end_idx])
-            
-            chunks.append(self._create_chunk(
-                content=segment,
-                chunk_type=chunk_type,
-                name=name,
-                start_line=line_num,
-                end_line=end_line,
-                language="text"
-            ))
-        
-        return chunks if chunks else [self._create_chunk(
+        # For now, just return the whole file as a single 'file' chunk
+        return [self._create_chunk(
             content=content,
             chunk_type="file",
             name=file_path.split("/")[-1] if file_path else "unknown",
             start_line=1,
-            end_line=total_lines,
+            end_line=content.count('\n') + 1,
             language="text"
         )]
 
