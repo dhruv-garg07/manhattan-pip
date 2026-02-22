@@ -212,7 +212,7 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        top_k = 3
+        top_k = 1
         result = coding_api.search_codebase(agent_id, query, top_k=top_k)
         result["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
         return json.dumps(result, indent=2)

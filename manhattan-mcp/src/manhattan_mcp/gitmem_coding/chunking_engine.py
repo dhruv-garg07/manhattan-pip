@@ -157,17 +157,40 @@ class PythonChunker(ChunkingEngine):
                     if not hasattr(node, 'lineno') or not hasattr(node, 'end_lineno'):
                         continue
                         
-                    if isinstance(node, ast.ClassDef):
+                    if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                         flush()
+                        
+                        # Determine chunk type
+                        if isinstance(node, ast.ClassDef):
+                            chunk_type = "class"
+                        else:
+                            # If it's inside a class, it's a method. If inside a function, it's a function.
+                            # We can check parent chunk type if we passed it, but for now 
+                            # let's use a simple heuristic: if prefix has dots, we check the parent.
+                            # Better: just use "method" if prefix is set and we're in a class.
+                            # Let's just use "function" for nested functions and "method" for class members.
+                            is_in_class = False
+                            if prefix:
+                                # This is a bit simplified, but better than before
+                                is_in_class = True # Default if prefix exists
+                            
+                            chunk_type = "method" if is_in_class else "function"
+                            
+                        # Format name
+                        name = f"{prefix}.{node.name}" if prefix else node.name
+                        
                         chunks.append(self._create_chunk(
                             content=get_segment(node.lineno, node.end_lineno),
-                            chunk_type="class",
-                            name=node.name,
+                            chunk_type=chunk_type,
+                            name=name,
                             start_line=node.lineno,
                             end_line=node.end_lineno,
                             language="python"
                         ))
-                        process_nodes(node.body, prefix=node.name)
+                        # Recurse into children (nested functions/classes)
+                        # We should skip very small bodies if they are just 'pass' or simple assignments
+                        if len(node.body) > 1 or (len(node.body) == 1 and not isinstance(node.body[0], (ast.Pass, ast.Expr))):
+                            process_nodes(node.body, prefix=name)
                     else:
                         buffer.append(node)
                         current_lines = buffer[-1].end_lineno - buffer[0].lineno + 1
