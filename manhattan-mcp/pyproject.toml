@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "manhattan-mcp"
-version = "0.2.5"
+version = "0.2.7"
 description = "Manhattan MCP Server - Token-Efficient Codebase Navigation (GitMem) for AI Agents"
 readme = "README.md"
 license = "MIT"

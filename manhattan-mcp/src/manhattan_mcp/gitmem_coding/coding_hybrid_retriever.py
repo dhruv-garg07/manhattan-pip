@@ -623,9 +623,14 @@ class CodingHybridRetriever:
 
             # Minimum threshold
             if final_score > 0.01:
+                # Return only compact fields — strip keywords and content
+                # which are the biggest source of token bloat
                 summary_chunk = {
-                    k: v for k, v in chunk.items()
-                    if k not in ("hash_id", "embedding_id", "vector")
+                    "name": chunk.get("name", ""),
+                    "type": chunk.get("type", ""),
+                    "summary": chunk.get("summary", ""),
+                    "start_line": chunk.get("start_line"),
+                    "end_line": chunk.get("end_line"),
                 }
 
                 scored_chunks.append({

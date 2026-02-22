@@ -236,6 +236,9 @@ if coding_api is not None:
         - File paths and line numbers
         - Relevance scores
         
+        NOTE: Large code blocks over 1000 characters are truncated in search results
+        for token efficiency. Use read_file_context() to see full content.
+        
         Args:
             query: Natural language search query describing what you are looking for
             agent_id: Agent identifier (default: "default")

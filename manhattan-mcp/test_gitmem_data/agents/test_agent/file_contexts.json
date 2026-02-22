@@ -1,0 +1,37 @@
+[
+  {
+    "file_path": "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/test_gitmem_data/large_file.py",
+    "file_name": "large_file.py",
+    "compact_skeleton": "{\"tree\": {\"id\": \"703a3fc2\", \"type\": \"start\", \"content\": \"File: large_file.py\", \"line\": 1, \"scope\": [], \"children\": [{\"id\": \"aed23c9e\", \"type\": \"processing\", \"content\": \"Code unit: large_function\", \"line\": 1, \"scope\": [], \"children\": []}, {\"id\": \"4318c2ba\", \"type\": \"end\", \"content\": \"End of File\", \"line\": 505, \"scope\": [], \"children\": []}]}, \"index\": {\"code\": [\"aed23c9e\"], \"large_function\": [\"aed23c9e\"], \"function\": [\"aed23c9e\"], \"large\": [\"aed23c9e\"]}}",
+    "chunks": [
+      {
+        "hash_id": "f34156352772cc76a311ba9d3aa880f359df234d6a449cfee483fe29a450d6ed",
+        "content": "def large_function():\n    \"\"\"\n    This function has a lot of content.\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    x = 1\n    \"\"\"\n    pass",
+        "type": "function",
+        "name": "large_function",
+        "start_line": 1,
+        "end_line": 505,
+        "language": "python",
+        "embedding_id": "f34156352772cc76a311ba9d3aa880f359df234d6a449cfee483fe29a450d6ed",
+        "token_count": 1271,
+        "keywords": [
+          "code",
+          "large_function",
+          "function",
+          "large"
+        ],
+        "summary": "Code unit: large_function"
+      }
+    ],
+    "language": "python",
+    "agent_id": "test_agent",
+    "session_id": "",
+    "last_accessed_at": "2026-02-23T00:15:22.204696",
+    "token_estimate": 1271,
+    "file_modified_at": "2026-02-23T00:15:22.204696",
+    "content_hash": "f84437633cec3e427cb8df641b0311a1a3bfca880ab82e893645e88dabcbbc16",
+    "id": "cc252107-c75c-4074-bb31-34bfadfa41b2",
+    "created_at": "2026-02-23T00:15:22.204696",
+    "access_count": 1
+  }
+]
