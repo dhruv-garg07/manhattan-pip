@@ -45,7 +45,6 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  grep_search         →  search_codebase(query)              ║
 ║  manual import trace →  dependency_graph(file_path)         ║
 ║  reindex_file (full) →  delta_update(file_path)             ║
-║  multiple file reads →  batch_read_codebase(directory_path) ║
 ║  any diagnostics     →  diagnostics(report_type)            ║
 ║  manual diff/history →  compare_snapshots(a, b)             ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -163,7 +162,7 @@ if coding_api is not None:
 
     @mcp.tool()
     async def search_codebase(
-        query: str,
+        queries: List[str],
         agent_id: str = "default"
     ) -> str:
         """
@@ -182,14 +181,21 @@ if coding_api is not None:
         - Relevance scores
         
         Args:
-            query: Natural language search query describing what you are looking for
+            queries: List of natural language search queries describing what you are looking for
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
         top_k = 5 
-        result = coding_api.search_codebase(agent_id, query, top_k=top_k)
-        result["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
-        return json.dumps(result, separators=(',', ':'))
+        
+        results = {}
+        for query in queries:
+            results[query] = coding_api.search_codebase(agent_id, query, top_k=top_k)
+            results[query]["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
+            
+        return json.dumps({
+            "status": "ok",
+            "queries": results
+        }, separators=(',', ':'))
 
     # ========================================================================
     # MCP TOOLS - Tier 1: Dependencies, Delta, Diagnostics
@@ -332,46 +338,6 @@ if coding_api is not None:
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.compare_snapshots(agent_id, sha_a, sha_b)
         return json.dumps(result, separators=(',', ':'))
-
-    @mcp.tool()
-    async def batch_read_codebase(
-        directory_path: str,
-        verbosity: str = "brief",
-        agent_id: str = "default"
-    ) -> str:
-        """
-        📦 Retrieve cached context for all indexed files under a directory.
-
-        Use this instead of calling search_codebase or index_file repeatedly.
-        Give a directory path and get context for every indexed file in it.
-        Turns N sequential tool calls into 1.
-
-        Args:
-            directory_path: Absolute path to the directory to scan
-            verbosity: Detail level ("brief", "normal", "detailed")
-            agent_id: Agent identifier (default: "default")
-        """
-        agent_id = _normalize_agent_id(agent_id)
-        norm_dir = os.path.normpath(directory_path)
-        
-        # Find all indexed files under this directory
-        all_files = coding_api.list_indexed_files(agent_id, limit=500)
-        matching_paths = [
-            item["file_path"]
-            for item in all_files.get("items", [])
-            if item.get("file_path") and os.path.normpath(item["file_path"]).startswith(norm_dir)
-        ]
-        
-        results = {}
-        for fp in matching_paths:
-            results[fp] = coding_api.summarize_context(agent_id, fp, verbosity)
-        
-        return json.dumps({
-            "status": "ok",
-            "directory": directory_path,
-            "files": results,
-            "count": len(results)
-        }, separators=(',', ':'))
 
 
     # ========================================================================

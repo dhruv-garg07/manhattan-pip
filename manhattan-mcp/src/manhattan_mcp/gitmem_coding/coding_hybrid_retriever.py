@@ -215,6 +215,7 @@ class CodingHybridRetriever:
         query: str,
         top_k: int = 5,
         hybrid_alpha: float = 0.55,
+        file_paths_filter: List[str] = None,
     ) -> Dict[str, Any]:
         """
         Perform a hybrid search for the query with metadata filtering.
@@ -265,6 +266,7 @@ class CodingHybridRetriever:
             file_filter=file_filter,
             route_tokens=route_tokens,
             is_broad=is_broad,
+            file_paths_filter=file_paths_filter,
         )
 
         return {
@@ -371,6 +373,7 @@ class CodingHybridRetriever:
         file_filter: str = None,
         route_tokens: List[str] = None,
         is_broad: bool = False,
+        file_paths_filter: List[str] = None,
     ) -> List[Dict[str, Any]]:
         """Execute multi-signal hybrid search."""
 
@@ -420,11 +423,19 @@ class CodingHybridRetriever:
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
         all_vectors = self.vector_store._load_vectors(agent_id) or {}
 
-        # Collect all chunks for IDF
         all_chunks_flat: List[Dict[str, Any]] = []
         chunk_to_ctx: List[Tuple[Dict[str, Any], str]] = []  # (chunk, file_path)
+        
+        normalized_file_paths_filter = set(os.path.normpath(fp) for fp in file_paths_filter) if file_paths_filter else None
+
         for ctx in contexts:
             file_path = ctx.get("file_path", "")
+            
+            # Apply file_paths_filter if provided
+            if normalized_file_paths_filter is not None:
+                if os.path.normpath(file_path) not in normalized_file_paths_filter:
+                    continue
+                    
             if file_filter:
                 normalized_filter = file_filter.replace("/", os.sep).replace("\\", os.sep).lower()
                 path_lower = file_path.lower()

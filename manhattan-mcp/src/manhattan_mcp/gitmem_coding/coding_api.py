@@ -598,6 +598,7 @@ class CodingAPI:
     # CRUD Operations (renamed for agent-facing tools)
     # =========================================================================
     
+    
     def index_file(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Index a file (create Code Mem). Alias: create_mem.
@@ -612,13 +613,13 @@ class CodingAPI:
         """
         return self._ingest_file(agent_id, file_path, chunks)
 
-    def search_codebase(self, agent_id: str, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def search_codebase(self, agent_id: str, query: str, top_k: int = 5, file_paths: List[str] = None) -> Dict[str, Any]:
         """
         Search the indexed codebase with hybrid semantic + keyword search.
         Alias: get_mem.
         """
         start_t = time.perf_counter()
-        results = self.retriever.search(agent_id, query, top_k=top_k)
+        results = self.retriever.search(agent_id, query, top_k=top_k, file_paths_filter=file_paths)
         self._record_perf("search", (time.perf_counter() - start_t) * 1000)
         return results
 
@@ -638,9 +639,9 @@ class CodingAPI:
         """Backward-compatible alias for index_file."""
         return self.index_file(agent_id, file_path, chunks)
     
-    def get_mem(self, agent_id: str, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def get_mem(self, agent_id: str, query: str, top_k: int = 5, file_paths: List[str] = None) -> Dict[str, Any]:
         """Backward-compatible alias for search_codebase."""
-        return self.search_codebase(agent_id, query, top_k)
+        return self.search_codebase(agent_id, query, top_k, file_paths)
     
     def update_mem(self, agent_id: str, file_path: str, chunks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Backward-compatible alias for reindex_file."""
