@@ -15,6 +15,7 @@ import os
 import json
 import hashlib
 import time
+import re
 
 
 class CodingAPI:
@@ -217,82 +218,99 @@ class CodingAPI:
     #     }
     #     return result
     
-    def dependency_graph(self, agent_id: str, file_path: str, depth: int = 1) -> Dict[str, Any]:
+    def dependency_graph(self, agent_id: str, file_paths: List[str], depth: int = 1) -> Dict[str, Any]:
         """
-        Build import/dependency graph for a file.
-        Shows what this file imports and what imports it.
+        Build import/dependency graph for a list of files.
+        Shows what these files import and what imports them.
+        Max 10 files per call.
         """
-        normalized = os.path.normpath(file_path)
-        file_basename = os.path.basename(normalized)
-        module_name = os.path.splitext(file_basename)[0]
-        
-        # Get imports FROM this file
-        imports_raw = self.store.get_file_imports(agent_id, normalized)
-        import_modules = []
-        for imp in imports_raw:
-            if "module" in imp:
-                import_modules.append(imp["module"])
-        
-        # Get files that import THIS file
-        imported_by = self.store.find_importers(agent_id, module_name)
-        
-        # Extract cross-file calls from chunks
-        calls_to = []
+        if not isinstance(file_paths, list):
+            file_paths = [file_paths]
+            
+        if len(file_paths) > 10:
+            return {
+                "status": "error",
+                "message": "Too many file paths. Please limit to 10 files per call."
+            }
+            
         contexts = self.store._load_agent_data(agent_id, "file_contexts")
-        found = next(
-            (ctx for ctx in contexts 
-             if os.path.normpath(ctx.get("file_path", "")) == normalized),
-            None
-        )
-        if found:
-            for chunk in found.get("chunks", []):
-                if chunk.get("type") in ("method", "function"):
-                    content = chunk.get("content", "")
-                    # Find obj.method() calls where obj is a known class
-                    import re as _re
-                    ext_calls = _re.findall(r'self\.(\w+)\.(\w+)\s*\(', content)
-                    for obj_attr, method in ext_calls:
-                        calls_to.append({
-                            "target": f"{obj_attr}.{method}",
-                            "from": chunk.get("name", "unknown"),
-                            "line": chunk.get("start_line", 0)
-                        })
+        batch_results = {}
         
-        # Depth > 1: follow transitive imports
-        transitive_imports = []
-        if depth > 1:
-            for mod in import_modules:
-                mod_basename = mod.split(".")[-1]
-                # Try to find this module in indexed files
-                for ctx in contexts:
-                    ctx_basename = os.path.splitext(os.path.basename(ctx.get("file_path", "")))[0]
-                    if ctx_basename == mod_basename:
-                        sub_imports = self.store.get_file_imports(agent_id, ctx.get("file_path", ""))
-                        for si in sub_imports:
-                            if "module" in si:
-                                transitive_imports.append({
-                                    "via": mod_basename,
-                                    "module": si["module"]
-                                })
-                        break
-        
-        result = {
+        for file_path in file_paths:
+            normalized = os.path.normpath(file_path)
+            file_basename = os.path.basename(normalized)
+            module_name = os.path.splitext(file_basename)[0]
+            
+            # Get imports FROM this file
+            imports_raw = self.store.get_file_imports(agent_id, normalized)
+            import_modules = []
+            for imp in imports_raw:
+                if "module" in imp:
+                    import_modules.append(imp["module"])
+            
+            # Get files that import THIS file
+            imported_by = self.store.find_importers(agent_id, module_name)
+            
+            # Extract cross-file calls from chunks
+            calls_to = []
+            found = next(
+                (ctx for ctx in contexts 
+                 if os.path.normpath(ctx.get("file_path", "")) == normalized),
+                None
+            )
+            if found:
+                for chunk in found.get("chunks", []):
+                    if chunk.get("type") in ("method", "function"):
+                        content = chunk.get("content", "")
+                        # Find obj.method() calls where obj is a known class
+                        ext_calls = re.findall(r'self\.(\w+)\.(\w+)\s*\(', content)
+                        for obj_attr, method in ext_calls:
+                            calls_to.append({
+                                "target": f"{obj_attr}.{method}",
+                                "from": chunk.get("name", "unknown"),
+                                "line": chunk.get("start_line", 0)
+                            })
+            
+            # Depth > 1: follow transitive imports
+            transitive_imports = []
+            if depth > 1:
+                for mod in import_modules:
+                    mod_basename = mod.split(".")[-1]
+                    # Try to find this module in indexed files
+                    for ctx in contexts:
+                        ctx_basename = os.path.splitext(os.path.basename(ctx.get("file_path", "")))[0]
+                        if ctx_basename == mod_basename:
+                            sub_imports = self.store.get_file_imports(agent_id, ctx.get("file_path", ""))
+                            for si in sub_imports:
+                                if "module" in si:
+                                    transitive_imports.append({
+                                        "via": mod_basename,
+                                        "module": si["module"]
+                                    })
+                            break
+            
+            result = {
+                "status": "ok",
+                "file": file_basename,
+                "file_path": normalized,
+                "imports": import_modules,
+                "imported_by": [ib["file_path"] for ib in imported_by],
+                "calls_to": calls_to,
+                "graph_summary": f"{file_basename} depends on {len(import_modules)} modules and is used by {len(imported_by)} modules"
+            }
+            
+            if transitive_imports:
+                result["transitive_imports"] = transitive_imports
+            
+            batch_results[file_path] = result
+            
+        return {
             "status": "ok",
-            "file": file_basename,
-            "file_path": normalized,
-            "imports": import_modules,
-            "imported_by": [ib["file_path"] for ib in imported_by],
-            "calls_to": calls_to,
-            "graph_summary": f"{file_basename} depends on {len(import_modules)} modules and is used by {len(imported_by)} modules"
+            "results": batch_results,
+            "_token_info": {
+                "hint": f"Dependency graphs built from cached index for {len(file_paths)} files — no file reading required"
+            }
         }
-        
-        if transitive_imports:
-            result["transitive_imports"] = transitive_imports
-        
-        result["_token_info"] = {
-            "hint": f"Dependency graph built from cached index — no file reading required"
-        }
-        return result
     
     def delta_update(self, agent_id: str, file_path: str) -> Dict[str, Any]:
         """

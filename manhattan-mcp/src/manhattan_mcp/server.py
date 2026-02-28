@@ -208,29 +208,32 @@ if coding_api is not None:
 
     @mcp.tool()
     async def dependency_graph(
-        file_path: str,
+        file_paths: List[str],
         depth: int = 1,
         agent_id: str = "default"
     ) -> Dict[str, Any]:
         """
-        🕸️ Build an import/dependency graph for a file.
+        🕸️ Build an import/dependency graph for a list of files.
         
-        Shows what a file imports, what imports it, and cross-file calls.
+        Shows what files import, what imports them, and cross-file calls.
         Use instead of manually tracing imports across files.
         
+        Max 10 files per call. If you have more, call the tool again with the next batch.
+        
         Returns:
-        - imports: List of modules this file imports
-        - imported_by: List of files that import this module
-        - calls_to: Cross-file method calls detected in the code
-        - graph_summary: Human-readable summary
+        - results: Dictionary mapping file paths to their dependency data
+          - imports: List of modules this file imports
+          - imported_by: List of files that import this module
+          - calls_to: Cross-file method calls detected in the code
+          - graph_summary: Human-readable summary
         
         Args:
-            file_path: Absolute path to the file
+            file_paths: List of absolute paths to the files
             depth: 1=direct deps only, 2=include transitive dependencies
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        return coding_api.dependency_graph(agent_id, file_path, depth)
+        return coding_api.dependency_graph(agent_id, file_paths, depth)
 
     @mcp.tool()
     async def delta_update(

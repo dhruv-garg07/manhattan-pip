@@ -604,6 +604,7 @@ class CodingContextStore:
         Extract import information from a file's stored chunks.
         Returns list of import details with module names.
         """
+        import re as _re
         normalized = os.path.normpath(file_path)
         contexts = self._load_agent_data(agent_id, "file_contexts")
         found = next(
@@ -616,25 +617,32 @@ class CodingContextStore:
             return []
         
         imports = []
+        # Robust regex to handle 'line:X' prefix and find imports anywhere in the chunk content
+        # Group 1: from X import, Group 2: import X
+        import_pattern = _re.compile(r'(?:line:\d+\s+)?(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))', _re.MULTILINE)
+        
         for chunk in found.get("chunks", []):
-            if chunk.get("type") == "import":
-                content = chunk.get("content", "")
-                # Parse import statement
-                import_info = {"raw": content.strip(), "line": chunk.get("start_line", 0)}
+            content = chunk.get("content", "")
+            matches = import_pattern.finditer(content)
+            
+            for match in matches:
+                from_mod = match.group(1)
+                direct_mod = match.group(2)
+                module = from_mod or direct_mod
                 
-                # Extract module name
-                import re as _re
-                from_match = _re.match(r'from\s+([\w.]+)\s+import', content)
-                direct_match = _re.match(r'import\s+([\w.]+)', content)
+                if not module:
+                     continue
+                     
+                import_info = {
+                    "raw": match.group(0).strip(),
+                    "module": module,
+                    "type": "from_import" if from_mod else "direct_import",
+                    "line": chunk.get("start_line", 0)
+                }
                 
-                if from_match:
-                    import_info["module"] = from_match.group(1)
-                    import_info["type"] = "from_import"
-                elif direct_match:
-                    import_info["module"] = direct_match.group(1)
-                    import_info["type"] = "direct_import"
-                
-                imports.append(import_info)
+                # Deduplicate imports within the same file
+                if not any(imp["module"] == module for imp in imports):
+                    imports.append(import_info)
         
         return imports
     
@@ -652,9 +660,11 @@ class CodingContextStore:
         
         for ctx in contexts:
             for chunk in ctx.get("chunks", []):
-                if chunk.get("type") == "import":
-                    content = chunk.get("content", "").lower()
-                    if module_lower in content or module_basename in content:
+                # Search all chunks as imports might be grouped into 'mixed' type
+                content = chunk.get("content", "").lower()
+                if module_lower in content or module_basename in content:
+                    # Double check it's actually an import statement to avoid false positives
+                    if "import " in content:
                         importers.append({
                             "file_path": ctx.get("file_path", ""),
                             "import_statement": chunk.get("content", "").strip(),
