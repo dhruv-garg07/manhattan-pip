@@ -258,7 +258,8 @@ class CodingHybridRetriever:
         # 2. Detect broad vs narrow intent
         query_lower_set = set(clean_query.lower().split())
         is_broad = bool(query_lower_set & _BROAD_INTENT_SIGNALS)
-        effective_top_k = max(top_k, 8) if is_broad else top_k
+        # If caller requested a strictly small top_k (e.g. batch queries), don't override it.
+        effective_top_k = max(top_k, 8) if is_broad and top_k >= 5 else top_k
 
         # 3. Search
         results = self._hybrid_search_chunks(
@@ -636,7 +637,11 @@ class CodingHybridRetriever:
             if final_score > 0.01:
                 summary_chunk = {
                     k: v for k, v in chunk.items()
-                    if k not in ("hash_id", "embedding_id", "vector")
+                    if k not in (
+                        "hash_id", "embedding_id", "vector",
+                        "start_line", "end_line", "token_count",
+                        "language"
+                    )
                 }
 
                 scored_chunks.append({

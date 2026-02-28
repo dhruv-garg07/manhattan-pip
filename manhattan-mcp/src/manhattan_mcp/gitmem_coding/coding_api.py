@@ -515,7 +515,6 @@ class CodingAPI:
                     "content": ch.get("content", ""),
                     "summary": ch.get("summary", ""),
                     "keywords": ch.get("keywords", []),
-                    "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
                 })
             return {
                 "status": "ok",

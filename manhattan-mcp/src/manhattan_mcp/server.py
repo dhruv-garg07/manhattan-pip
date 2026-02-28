@@ -181,11 +181,18 @@ if coding_api is not None:
         - Relevance scores
         
         Args:
-            queries: List of natural language search queries describing what you are looking for
+            queries: List of natural language search queries describing what you are looking for. 
+                     ⚠️ IMPORTANT: Limit to 3 queries per tool call to avoid exceeding token limits. 
+                     If you have more queries, call this tool multiple times instead of passing all queries at once.
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        top_k = 5 
+        
+        # Dynamically adjust top_k to avoid exceeding token limits
+        # E.g. MAX_RESULTS = 9 total across all queries
+        # If 1 query -> 5 results, if 7 queries -> 1-2 results per query.
+        max_results_per_query = max(1, 9 // max(1, len(queries)))
+        top_k = min(5, max_results_per_query)
         
         results = {}
         for query in queries:

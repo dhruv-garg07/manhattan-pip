@@ -83,12 +83,14 @@ class TextChunker(ChunkingEngine):
     
     def chunk_file(self, content: str, file_path: str = "") -> List[CodeChunk]:
         # For now, just return the whole file as a single 'file' chunk
+        lines = content.splitlines()
+        numbered_content = "\n".join(f"{i + 1}: {line}" for i, line in enumerate(lines))
         return [self._create_chunk(
-            content=content,
+            content=numbered_content,
             chunk_type="file",
             name=file_path.split("/")[-1] if file_path else "unknown",
             start_line=1,
-            end_line=content.count('\n') + 1,
+            end_line=len(lines),
             language="text"
         )]
 
@@ -103,7 +105,7 @@ class PythonChunker(ChunkingEngine):
             lines = content.splitlines()
             
             def get_segment(start_line, end_line) -> str:
-                return "\n".join(lines[start_line-1:end_line])
+                return "\n".join(f"{start_line + i}: {line}" for i, line in enumerate(lines[start_line-1:end_line]))
 
             def process_nodes(nodes, prefix=""):
                 buffer = []
