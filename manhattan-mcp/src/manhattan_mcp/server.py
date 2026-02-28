@@ -45,13 +45,13 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  grep_search         →  search_codebase(query)              ║
 ║  manual import trace →  dependency_graph(file_path)         ║
 ║  reindex_file (full) →  delta_update(file_path)             ║
-║  get_token_savings   →  usage_report() / cache_stats()      ║
+║  multiple file reads →  batch_file_context(file_paths)      ║
+║  any diagnostics     →  diagnostics(report_type)            ║
 ║  manual diff/history →  compare_snapshots(a, b)             ║
-║  manual latency log  →  performance_profile()               ║
 ╚══════════════════════════════════════════════════════════════╝
 
 AFTER modifying files → call index_file(file_path) to update the cache.
-CHECK savings         → call get_token_savings() to see cumulative savings.
+CHECK savings         → call diagnostics("savings") to see cumulative savings.
 
 WHY: Every raw file read costs thousands of tokens. This system
 compresses files while preserving all semantic meaning
@@ -127,7 +127,7 @@ async def api_usage() -> str:
     return json.dumps({
         "status": "unlimited",
         "mode": "local_gitmem"
-    }, indent=2)
+    }, separators=(',', ':'))
 
 
 # ============================================================================
@@ -135,31 +135,6 @@ async def api_usage() -> str:
 # ============================================================================
 
 if coding_api is not None:
-
-    # @mcp.tool()
-    # async def get_file_outline(
-    #     file_path: str,
-    #     agent_id: str = "default"
-    # ) -> str:
-    #     """
-    #     📋 Get the structural outline of a file — functions, classes, methods.
-    #     
-    #     PREFER THIS over your built-in view_file_outline.
-    #     Returns a compact structural overview (~10% of file tokens):
-    #     - Function/class names and signatures
-    #     - Line ranges for each code unit
-    #     - Brief logic summaries
-    #     - Type info (function, class, method, import, block)
-    #     
-    #     Auto-indexes the file if not already cached.
-    #     
-    #     Args:
-    #         file_path: Absolute path to the file
-    #         agent_id: Agent identifier (default: "default")
-    #     """
-    #     agent_id = _normalize_agent_id(agent_id)
-    #     result = coding_api.get_file_outline(agent_id, file_path)
-    #     return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def list_directory(
@@ -184,7 +159,7 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.list_directory(agent_id, path)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def search_codebase(
@@ -214,37 +189,11 @@ if coding_api is not None:
         top_k = 1
         result = coding_api.search_codebase(agent_id, query, top_k=top_k)
         result["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     # ========================================================================
-    # MCP TOOLS - Tier 1: Cross-Reference, Dependencies, Delta, Stats
+    # MCP TOOLS - Tier 1: Dependencies, Delta, Diagnostics
     # ========================================================================
-
-    # @mcp.tool()
-    # async def cross_reference(
-    #     symbol: str,
-    #     agent_id: str = "default"
-    # ) -> str:
-    #     """
-    #     🔗 Find all usages of a symbol across the entire indexed codebase.
-    #     
-    #     PREFER THIS over grep_search for "where is X used?" questions.
-    #     Searches the global symbol index and chunk data to find:
-    #     - Definitions (where a function/class is defined)
-    #     - Keyword matches (where a symbol appears in chunk keywords)
-    #     - Usage references (where a symbol is used in code content)
-    #     
-    #     Returns:
-    #     - File paths, chunk names, types, and line ranges for each reference
-    #     - Match reason (definition, keyword, or usage)
-    #     
-    #     Args:
-    #         symbol: Symbol name to search for (e.g., "UserManager", "login", "refresh_token")
-    #         agent_id: Agent identifier (default: "default")
-    #     """
-    #     agent_id = _normalize_agent_id(agent_id)
-    #     result = coding_api.cross_reference(agent_id, symbol)
-    #     return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def dependency_graph(
@@ -271,7 +220,7 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.dependency_graph(agent_id, file_path, depth)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def delta_update(
@@ -295,27 +244,37 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.delta_update(agent_id, file_path)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
-    async def cache_stats(
+    async def diagnostics(
+        report_type: str = "overview",
         agent_id: str = "default"
     ) -> str:
         """
-        📊 Get detailed cache analytics with per-file freshness and recommendations.
+        📊 Get system diagnostics. Types: "overview", "cache", "performance", "savings".
         
-        Enhanced replacement for get_token_savings. Shows:
-        - Overview: total files, chunks, tokens cached, hit rate
-        - Freshness: how many files are fresh/stale/missing
-        - Per-file breakdown: chunks, tokens, language, freshness, access count
-        - Recommendations: actionable suggestions (e.g., "3 files stale, run delta_update")
+        - "overview": Combined savings + cache stats (default)
+        - "cache": Detailed per-file freshness and recommendations
+        - "performance": Timing data for indexing, search, retrieval
+        - "savings": Token savings report with hit/miss rates
         
         Args:
+            report_type: One of "overview", "cache", "performance", "savings"
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.cache_stats(agent_id)
-        return json.dumps(result, indent=2)
+        if report_type == "cache":
+            return json.dumps(coding_api.cache_stats(agent_id), separators=(',', ':'))
+        elif report_type == "performance":
+            return json.dumps(coding_api.performance_profile(agent_id), separators=(',', ':'))
+        elif report_type == "savings":
+            return json.dumps(coding_api.get_token_savings(agent_id), separators=(',', ':'))
+        else:  # overview
+            return json.dumps({
+                "savings": coding_api.get_token_savings(agent_id),
+                "cache": coding_api.cache_stats(agent_id),
+            }, separators=(',', ':'))
 
     @mcp.tool()
     async def invalidate_cache(
@@ -336,27 +295,7 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.invalidate_cache(agent_id, file_path, scope)
-        return json.dumps(result, indent=2)
-
-    # @mcp.tool()
-    # async def summarize_context(
-    #     file_path: str,
-    #     verbosity: str = "brief",
-    #     agent_id: str = "default"
-    # ) -> str:
-    #     """
-    #     📝 Get a file's context at a specific verbosity level.
-    #     
-    #     Useful for quick overviews without reading the full code flow.
-    #     
-    #     Args:
-    #         file_path: Absolute path to the file
-    #         verbosity: 'brief' (~50 tokens), 'normal' (structured outline), or 'detailed' (full summaries)
-    #         agent_id: Agent identifier (default: "default")
-    #     """
-    #     agent_id = _normalize_agent_id(agent_id)
-    #     result = coding_api.summarize_context(agent_id, file_path, verbosity)
-    #     return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def create_snapshot(
@@ -374,7 +313,7 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.create_snapshot(agent_id, message)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def compare_snapshots(
@@ -392,35 +331,38 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.compare_snapshots(agent_id, sha_a, sha_b)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
-    async def usage_report(
+    async def batch_file_context(
+        file_paths: List[str],
         agent_id: str = "default"
     ) -> str:
         """
-        📊 Get aggregate usage analytics (access counts, trends, top files).
+        📦 Retrieve cached context for multiple files in a single call.
+        
+        Use this when you need to analyze several files at once.
+        Turns N sequential tool calls into 1. Returns per-file metadata
+        from the cache (freshness, chunks, tokens, language).
         
         Args:
+            file_paths: List of absolute file paths to retrieve
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.usage_report(agent_id)
-        return json.dumps(result, indent=2)
-
-    @mcp.tool()
-    async def performance_profile(
-        agent_id: str = "default"
-    ) -> str:
-        """
-        ⚡ Get performance timing data for key operations (indexing, search, retrieval).
+        # Get full cache stats once, then extract per-file info
+        stats = coding_api.cache_stats(agent_id)
+        files_index = {}
+        for f in stats.get("files", []):
+            fp = os.path.normpath(f.get("file_path", ""))
+            files_index[fp] = f
         
-        Args:
-            agent_id: Agent identifier (default: "default")
-        """
-        agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.performance_profile(agent_id)
-        return json.dumps(result, indent=2)
+        results = {}
+        for fp in file_paths:
+            norm = os.path.normpath(fp)
+            results[fp] = files_index.get(norm, {"status": "not_indexed"})
+        
+        return json.dumps({"status": "ok", "files": results, "count": len(results)}, separators=(',', ':'))
 
 
     # ========================================================================
@@ -467,7 +409,7 @@ if coding_api is not None:
             print(f"[{agent_id}] Auto-indexing {file_path} via AST parsing.", file=sys.stderr)
 
         result = coding_api.index_file(agent_id, file_path, chunks)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def reindex_file(
@@ -494,7 +436,7 @@ if coding_api is not None:
             print(f"[{agent_id}] RE-INDEX: Auto-parsing {file_path}", file=sys.stderr)
 
         result = coding_api.reindex_file(agent_id, file_path, chunks)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
     async def remove_index(
@@ -510,7 +452,7 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.remove_index(agent_id, file_path)
-        return json.dumps({"status": "deleted" if result else "not_found", "file_path": file_path}, indent=2)
+        return json.dumps({"status": "deleted" if result else "not_found", "file_path": file_path}, separators=(',', ':'))
 
     @mcp.tool()
     async def list_indexed_files(
@@ -531,29 +473,4 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.list_indexed_files(agent_id, limit, offset)
-        return json.dumps(result, indent=2)
-
-    # ========================================================================
-    # MCP TOOLS - Token Savings & Analytics
-    # ========================================================================
-
-    @mcp.tool()
-    async def get_token_savings(
-        agent_id: str = "default"
-    ) -> str:
-        """
-        📊 Get token savings report for this session.
-        
-        Shows how many tokens were saved by using the coding context system
-        instead of reading full files every time. Includes:
-        - Total tokens stored vs retrieved from cache
-        - Cache hit/miss rates
-        - Estimated savings percentage
-        - Number of files in cache
-        
-        Args:
-            agent_id: Agent identifier (default: "default")
-        """
-        agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.get_token_savings(agent_id)
-        return json.dumps(result, indent=2)
+        return json.dumps(result, separators=(',', ':'))
