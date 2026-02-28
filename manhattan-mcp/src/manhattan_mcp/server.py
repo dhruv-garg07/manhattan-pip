@@ -121,12 +121,12 @@ def _normalize_agent_id(agent_id: str) -> str:
 # ============================================================================
 
 @mcp.tool()
-async def api_usage() -> str:
+async def api_usage() -> Dict[str, Any]:
     """Get usage statistics (Mocked for local version)."""
-    return json.dumps({
+    return {
         "status": "unlimited",
         "mode": "local_gitmem"
-    }, separators=(',', ':'))
+    }
 
 
 # ============================================================================
@@ -135,11 +135,10 @@ async def api_usage() -> str:
 
 if coding_api is not None:
 
-    @mcp.tool()
     async def list_directory(
         path: str = "",
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         📂 List files and directories in the indexed codebase.
         
@@ -157,14 +156,13 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.list_directory(agent_id, path)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.list_directory(agent_id, path)
 
     @mcp.tool()
     async def search_codebase(
         queries: List[str],
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🔍 Search the entire indexed codebase using semantic + keyword hybrid search.
         
@@ -197,12 +195,12 @@ if coding_api is not None:
         results = {}
         for query in queries:
             results[query] = coding_api.search_codebase(agent_id, query, top_k=top_k)
-            results[query]["next_instruction"] = "If results aren't satisfactory, try rephrasing your query."
             
-        return json.dumps({
+        return {
             "status": "ok",
-            "queries": results
-        }, separators=(',', ':'))
+            "queries": results,
+            "next_instruction": "If results aren't satisfactory, try rephrasing your query."
+        }
 
     # ========================================================================
     # MCP TOOLS - Tier 1: Dependencies, Delta, Diagnostics
@@ -213,7 +211,7 @@ if coding_api is not None:
         file_path: str,
         depth: int = 1,
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🕸️ Build an import/dependency graph for a file.
         
@@ -232,14 +230,13 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.dependency_graph(agent_id, file_path, depth)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.dependency_graph(agent_id, file_path, depth)
 
     @mcp.tool()
     async def delta_update(
         file_path: str,
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         ⚡ Incrementally re-index a file — only process changed chunks.
         
@@ -256,14 +253,13 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.delta_update(agent_id, file_path)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.delta_update(agent_id, file_path)
 
     @mcp.tool()
     async def diagnostics(
         report_type: str = "overview",
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         📊 Get system diagnostics. Types: "overview", "cache", "performance", "savings".
         
@@ -278,23 +274,23 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         if report_type == "cache":
-            return json.dumps(coding_api.cache_stats(agent_id), separators=(',', ':'))
+            return coding_api.cache_stats(agent_id)
         elif report_type == "performance":
-            return json.dumps(coding_api.performance_profile(agent_id), separators=(',', ':'))
+            return coding_api.performance_profile(agent_id)
         elif report_type == "savings":
-            return json.dumps(coding_api.get_token_savings(agent_id), separators=(',', ':'))
+            return coding_api.get_token_savings(agent_id)
         else:  # overview
-            return json.dumps({
+            return {
                 "savings": coding_api.get_token_savings(agent_id),
                 "cache": coding_api.cache_stats(agent_id),
-            }, separators=(',', ':'))
+            }
 
     @mcp.tool()
     async def invalidate_cache(
         file_path: str = None,
         scope: str = "file",
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🧹 Explicitly invalidate cache entries for a file or entire scope.
         
@@ -307,14 +303,13 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.invalidate_cache(agent_id, file_path, scope)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.invalidate_cache(agent_id, file_path, scope)
 
     @mcp.tool()
     async def create_snapshot(
         message: str = "Snapshot",
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         📸 Create an immutable snapshot of all currently indexed contexts.
         
@@ -325,15 +320,14 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.create_snapshot(agent_id, message)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.create_snapshot(agent_id, message)
 
     @mcp.tool()
     async def compare_snapshots(
         sha_a: str,
         sha_b: str,
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🔍 Compare two snapshots to see what changed in the codebase context.
         
@@ -343,8 +337,7 @@ if coding_api is not None:
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.compare_snapshots(agent_id, sha_a, sha_b)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.compare_snapshots(agent_id, sha_a, sha_b)
 
 
     # ========================================================================
@@ -356,7 +349,7 @@ if coding_api is not None:
         file_path: str,
         agent_id: str = "default",
         chunks: List[Dict[str, Any]] = None
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         📝 Index a file into the codebase context system.
         
@@ -390,15 +383,14 @@ if coding_api is not None:
         else:
             print(f"[{agent_id}] Auto-indexing {file_path} via AST parsing.", file=sys.stderr)
 
-        result = coding_api.index_file(agent_id, file_path, chunks)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.index_file(agent_id, file_path, chunks)
 
     @mcp.tool()
     async def reindex_file(
         file_path: str,
         agent_id: str = "default",
         chunks: List[Dict[str, Any]] = None
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🔄 Re-index a file after modifications.
         
@@ -417,14 +409,13 @@ if coding_api is not None:
         else:
             print(f"[{agent_id}] RE-INDEX: Auto-parsing {file_path}", file=sys.stderr)
 
-        result = coding_api.reindex_file(agent_id, file_path, chunks)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.reindex_file(agent_id, file_path, chunks)
 
     @mcp.tool()
     async def remove_index(
         file_path: str,
         agent_id: str = "default"
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         🗑️ Remove a file's index from the codebase context system.
         
@@ -434,14 +425,14 @@ if coding_api is not None:
         """
         agent_id = _normalize_agent_id(agent_id)
         result = coding_api.remove_index(agent_id, file_path)
-        return json.dumps({"status": "deleted" if result else "not_found", "file_path": file_path}, separators=(',', ':'))
+        return {"status": "deleted" if result else "not_found", "file_path": file_path}
 
     @mcp.tool()
     async def list_indexed_files(
         agent_id: str = "default",
         limit: int = 50,
         offset: int = 0
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         📋 List all files currently indexed in the codebase context system.
         
@@ -454,5 +445,4 @@ if coding_api is not None:
             offset: Pagination offset
         """
         agent_id = _normalize_agent_id(agent_id)
-        result = coding_api.list_indexed_files(agent_id, limit, offset)
-        return json.dumps(result, separators=(',', ':'))
+        return coding_api.list_indexed_files(agent_id, limit, offset)

@@ -50,22 +50,11 @@ class CodingFileNode:
     token_estimate: int = 0
 
     def to_dict(self) -> Dict:
-        d = {
+        return {
             "name": self.name,
             "path": self.path.strip("/"),
-            "type": self.type,
-            "size": self.size,
-            "last_modified": self.last_modified,
-            "content_type": self.content_type,
-            "id": self.id
+            "type": self.type
         }
-        if self.language:
-            d["language"] = self.language
-        if self.line_count:
-            d["line_count"] = self.line_count
-        if self.token_estimate:
-            d["token_estimate"] = self.token_estimate
-        return d
 
 
 # Extension mapping for language-based folder display
