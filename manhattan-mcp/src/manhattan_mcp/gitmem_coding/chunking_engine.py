@@ -62,19 +62,25 @@ class ChunkingEngine:
     def _create_chunk(self, content: str, chunk_type: str, name: str, 
                       start_line: int, end_line: int, language: str) -> CodeChunk:
         """Helper to create a normalized CodeChunk."""
+        
+        # Add line numbers to the content for consistent output
+        lines = content.splitlines()
+        numbered_content = " ".join(f"line:{start_line + i} {line}" for i, line in enumerate(lines))
+        
         # Normalize for consistent hashing (strip heavy whitespace)
+        # We hash the original content to ensure stability
         normalized = re.sub(r'\s+', ' ', content).strip()
         hash_id = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
         
         return CodeChunk(
             hash_id=hash_id,
-            content=content,
+            content=numbered_content,
             type=chunk_type,
             name=name,
             start_line=start_line,
             end_line=end_line,
             language=language,
-            token_count=int(len(content) * TOKENS_PER_CHAR_RATIO)
+            token_count=int(len(numbered_content) * TOKENS_PER_CHAR_RATIO)
         )
 
 
@@ -84,9 +90,8 @@ class TextChunker(ChunkingEngine):
     def chunk_file(self, content: str, file_path: str = "") -> List[CodeChunk]:
         # For now, just return the whole file as a single 'file' chunk
         lines = content.splitlines()
-        numbered_content = "\n".join(f"{i + 1}: {line}" for i, line in enumerate(lines))
         return [self._create_chunk(
-            content=numbered_content,
+            content=content,
             chunk_type="file",
             name=file_path.split("/")[-1] if file_path else "unknown",
             start_line=1,
@@ -105,7 +110,7 @@ class PythonChunker(ChunkingEngine):
             lines = content.splitlines()
             
             def get_segment(start_line, end_line) -> str:
-                return "\n".join(f"{start_line + i}: {line}" for i, line in enumerate(lines[start_line-1:end_line]))
+                return "\n".join(lines[start_line-1:end_line])
 
             def process_nodes(nodes, prefix=""):
                 buffer = []
