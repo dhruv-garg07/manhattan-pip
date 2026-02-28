@@ -450,91 +450,91 @@ class CodingAPI:
         
         return {"status": "error", "message": f"Invalid scope '{scope}'. Use 'file', 'stale', or 'all'."}
     
-    # def summarize_context(
-    #     self, agent_id: str, file_path: str, verbosity: str = "brief"
-    # ) -> Dict[str, Any]:
-    #     """
-    #     Return a file's context at configurable verbosity levels.
-    #     brief (~50 tokens), normal (code_flow), detailed (full chunks).
-    #     """
-    #     normalized = os.path.normpath(file_path)
-    #     
-    #     # Ensure indexed
-    #     cached = self.store.retrieve_file_context(agent_id, normalized)
-    #     if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
-    #         if os.path.exists(normalized):
-    #             self.index_file(agent_id, normalized)
-    #             cached = self.store.retrieve_file_context(agent_id, normalized)
-    #     
-    #     if cached.get("status") != "cache_hit":
-    #         return {"status": "error", "message": f"Could not retrieve context: {normalized}"}
-    #     
-    #     # Get full context data
-    #     contexts = self.store._load_agent_data(agent_id, "file_contexts")
-    #     found = next(
-    #         (ctx for ctx in contexts
-    #          if os.path.normpath(ctx.get("file_path", "")) == normalized),
-    #         None
-    #     )
-    #     if not found:
-    #         return {"status": "error", "message": f"Context not found in store: {normalized}"}
-    #     
-    #     chunks = found.get("chunks", [])
-    #     file_name = os.path.basename(normalized)
-    #     language = found.get("language", "unknown")
-    #     
-    #     if verbosity == "brief":
-    #         # Ultra-compact: file + language + chunk type counts + key names
-    #         type_counts = {}
-    #         key_names = []
-    #         for ch in chunks:
-    #             ct = ch.get("type", "block")
-    #             type_counts[ct] = type_counts.get(ct, 0) + 1
-    #             if ct in ("class", "function") and ch.get("name"):
-    #                 key_names.append(ch["name"])
-    #         
-    #         type_summary = ", ".join(f"{v} {k}s" for k, v in type_counts.items())
-    #         names_str = ", ".join(key_names[:8])
-    #         
-    #         return {
-    #             "status": "ok",
-    #             "verbosity": "brief",
-    #             "file": file_name,
-    #             "language": language,
-    #             "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
-    #             "tokens_used": len(f"{type_summary} {names_str}") // 4,
-    #         }
-    #     
-    #     elif verbosity == "detailed":
-    #         # Full chunks with content and summaries
-    #         detailed_chunks = []
-    #         for ch in chunks:
-    #             detailed_chunks.append({
-    #                 "name": ch.get("name", ""),
-    #                 "type": ch.get("type", ""),
-    #                 "content": ch.get("content", ""),
-    #                 "summary": ch.get("summary", ""),
-    #                 "keywords": ch.get("keywords", []),
-    #                 "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
-    #             })
-    #         return {
-    #             "status": "ok",
-    #             "verbosity": "detailed",
-    #             "file": file_name,
-    #             "language": language,
-    #             "chunks": detailed_chunks,
-    #             "total_chunks": len(detailed_chunks),
-    #         }
-    #     
-    #     else:  # "normal" — default: return code_flow tree
-    #         return {
-    #             "status": "ok",
-    #             "verbosity": "normal",
-    #             "file": file_name,
-    #             "language": language,
-    #             "code_flow": cached.get("code_flow", {}),
-    #             "freshness": cached.get("freshness", "unknown"),
-    #         }
+    def summarize_context(
+        self, agent_id: str, file_path: str, verbosity: str = "brief"
+    ) -> Dict[str, Any]:
+        """
+        Return a file's context at configurable verbosity levels.
+        brief (~50 tokens), normal (code_flow), detailed (full chunks).
+        """
+        normalized = os.path.normpath(file_path)
+        
+        # Ensure indexed
+        cached = self.store.retrieve_file_context(agent_id, normalized)
+        if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
+            if os.path.exists(normalized):
+                self.index_file(agent_id, normalized)
+                cached = self.store.retrieve_file_context(agent_id, normalized)
+        
+        if cached.get("status") != "cache_hit":
+            return {"status": "error", "message": f"Could not retrieve context: {normalized}"}
+        
+        # Get full context data
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        found = next(
+            (ctx for ctx in contexts
+             if os.path.normpath(ctx.get("file_path", "")) == normalized),
+            None
+        )
+        if not found:
+            return {"status": "error", "message": f"Context not found in store: {normalized}"}
+        
+        chunks = found.get("chunks", [])
+        file_name = os.path.basename(normalized)
+        language = found.get("language", "unknown")
+        
+        if verbosity == "brief":
+            # Ultra-compact: file + language + chunk type counts + key names
+            type_counts = {}
+            key_names = []
+            for ch in chunks:
+                ct = ch.get("type", "block")
+                type_counts[ct] = type_counts.get(ct, 0) + 1
+                if ct in ("class", "function") and ch.get("name"):
+                    key_names.append(ch["name"])
+            
+            type_summary = ", ".join(f"{v} {k}s" for k, v in type_counts.items())
+            names_str = ", ".join(key_names[:8])
+            
+            return {
+                "status": "ok",
+                "verbosity": "brief",
+                "file": file_name,
+                "language": language,
+                "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
+                "tokens_used": len(f"{type_summary} {names_str}") // 4,
+            }
+        
+        elif verbosity == "detailed":
+            # Full chunks with content and summaries
+            detailed_chunks = []
+            for ch in chunks:
+                detailed_chunks.append({
+                    "name": ch.get("name", ""),
+                    "type": ch.get("type", ""),
+                    "content": ch.get("content", ""),
+                    "summary": ch.get("summary", ""),
+                    "keywords": ch.get("keywords", []),
+                    "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
+                })
+            return {
+                "status": "ok",
+                "verbosity": "detailed",
+                "file": file_name,
+                "language": language,
+                "chunks": detailed_chunks,
+                "total_chunks": len(detailed_chunks),
+            }
+        
+        else:  # "normal" — default: return code_flow tree
+            return {
+                "status": "ok",
+                "verbosity": "normal",
+                "file": file_name,
+                "language": language,
+                "code_flow": cached.get("code_flow", {}),
+                "freshness": cached.get("freshness", "unknown"),
+            }
     
     def create_snapshot(self, agent_id: str, message: str = "Snapshot") -> Dict[str, Any]:
         """

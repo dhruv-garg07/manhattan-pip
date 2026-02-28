@@ -45,7 +45,7 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  grep_search         →  search_codebase(query)              ║
 ║  manual import trace →  dependency_graph(file_path)         ║
 ║  reindex_file (full) →  delta_update(file_path)             ║
-║  multiple file reads →  batch_file_context(file_paths)      ║
+║  multiple file reads →  batch_read_codebase(directory_path) ║
 ║  any diagnostics     →  diagnostics(report_type)            ║
 ║  manual diff/history →  compare_snapshots(a, b)             ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -334,35 +334,44 @@ if coding_api is not None:
         return json.dumps(result, separators=(',', ':'))
 
     @mcp.tool()
-    async def batch_file_context(
-        file_paths: List[str],
+    async def batch_read_codebase(
+        directory_path: str,
+        verbosity: str = "brief",
         agent_id: str = "default"
     ) -> str:
         """
-        📦 Retrieve cached context for multiple files in a single call.
-        
-        Use this when you need to analyze several files at once.
-        Turns N sequential tool calls into 1. Returns per-file metadata
-        from the cache (freshness, chunks, tokens, language).
-        
+        📦 Retrieve cached context for all indexed files under a directory.
+
+        Use this instead of calling search_codebase or index_file repeatedly.
+        Give a directory path and get context for every indexed file in it.
+        Turns N sequential tool calls into 1.
+
         Args:
-            file_paths: List of absolute file paths to retrieve
+            directory_path: Absolute path to the directory to scan
+            verbosity: Detail level ("brief", "normal", "detailed")
             agent_id: Agent identifier (default: "default")
         """
         agent_id = _normalize_agent_id(agent_id)
-        # Get full cache stats once, then extract per-file info
-        stats = coding_api.cache_stats(agent_id)
-        files_index = {}
-        for f in stats.get("files", []):
-            fp = os.path.normpath(f.get("file_path", ""))
-            files_index[fp] = f
+        norm_dir = os.path.normpath(directory_path)
+        
+        # Find all indexed files under this directory
+        all_files = coding_api.list_indexed_files(agent_id, limit=500)
+        matching_paths = [
+            item["file_path"]
+            for item in all_files.get("items", [])
+            if item.get("file_path") and os.path.normpath(item["file_path"]).startswith(norm_dir)
+        ]
         
         results = {}
-        for fp in file_paths:
-            norm = os.path.normpath(fp)
-            results[fp] = files_index.get(norm, {"status": "not_indexed"})
+        for fp in matching_paths:
+            results[fp] = coding_api.summarize_context(agent_id, fp, verbosity)
         
-        return json.dumps({"status": "ok", "files": results, "count": len(results)}, separators=(',', ':'))
+        return json.dumps({
+            "status": "ok",
+            "directory": directory_path,
+            "files": results,
+            "count": len(results)
+        }, separators=(',', ':'))
 
 
     # ========================================================================
