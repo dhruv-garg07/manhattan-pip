@@ -22,16 +22,15 @@ class CodingAPI:
     High-level API for coding context storage.
     
     VFS Navigation Tools (for MCP):
-    1. get_file_outline(file_path) — structural outline only
-    2. list_directory(path) — browse indexed files
-    3. search_codebase(query) — hybrid semantic+keyword search
-    4. get_token_savings() — savings report
+    1. list_directory(path) — browse indexed files
+    2. search_codebase(query) — hybrid semantic+keyword search
+    3. get_token_savings() — savings report
     
     CRUD Operations:
-    5. index_file(file_path) — index/create
-    6. reindex_file(file_path) — re-index/update
-    7. remove_index(file_path) — delete
-    8. list_indexed_files() — list all
+    4. index_file(file_path) — index/create
+    5. reindex_file(file_path) — re-index/update
+    6. remove_index(file_path) — delete
+    7. list_indexed_files() — list all
     """
     
     def __init__(self, root_path: str = "./.gitmem_coding"):
@@ -62,111 +61,111 @@ class CodingAPI:
     # VFS Navigation Tools (NEW — for agent-facing MCP tools)
     # =========================================================================
     
-    def get_file_outline(self, agent_id: str, file_path: str) -> Dict[str, Any]:
-        """
-        Get structural outline of a file — chunk names, types, signatures, line ranges.
-        No full content. Auto-indexes if not cached or stale.
-        """
-        normalized = os.path.normpath(file_path)
-        
-        # 1. Check cache via store (includes freshness check)
-        cached = self.store.retrieve_file_context(agent_id, normalized)
-        
-        if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
-            # Auto-index (re-index if stale)
-            if os.path.exists(normalized):
-                self.index_file(agent_id, normalized)
-                # Re-retrieve to get the new chunks
-                cached = self.store.retrieve_file_context(agent_id, normalized)
-        
-        if cached.get("status") != "cache_hit":
-            return {
-                "status": "error",
-                "message": f"File not found and could not be indexed: {normalized}"
-            }
-        
-        # We need the full file context object from the agent data to get the chunks
-        # retrieve_file_context return 'code_flow' which is a BST/Tree.
-        # But get_file_outline wants the raw chunks list for a flat overview.
-        contexts = self.store._load_agent_data(agent_id, "file_contexts")
-        found = next(
-            (ctx for ctx in contexts 
-             if os.path.normpath(ctx.get("file_path", "")) == normalized), 
-            None
-        )
-        
-        if found is None:
-             return {
-                "status": "error",
-                "message": f"File indexed but not found in store retrieval: {normalized}"
-            }
-        
-        # Extract outline from chunks
-        chunks = found.get("chunks", [])
-        outline_items = []
-        for chunk in chunks:
-            item = {
-                "name": chunk.get("name", "unknown"),
-                "type": chunk.get("type", "unknown"),
-                "start_line": chunk.get("start_line", 0),
-                "end_line": chunk.get("end_line", 0),
-            }
-            # Include signature (content first line only)
-            content = chunk.get("content", "")
-            if content:
-                first_line = content.split("\n")[0].strip()
-                item["signature"] = first_line
-                
-            outline_items.append(item)
-        
-        original_tokens = self._estimate_file_tokens(normalized)
-        outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
-        
-        # Optimization for worst-case scenarios (many tiny functions)
-        if original_tokens > 0 and outline_tokens > original_tokens * 0.3:
-            # 1. Drop signatures, which are usually the longest part
-            for item in outline_items:
-                item.pop('signature', None)
-            outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
-            
-            # 2. If still too large, drop line numbers
-            if outline_tokens > original_tokens * 0.5:
-                for item in outline_items:
-                    item.pop('start_line', None)
-                    item.pop('end_line', None)
-                outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
-                
-            # 3. If outline is STILL too large, just group names by type
-            if outline_tokens > original_tokens * 0.8:
-                grouped = {}
-                for item in outline_items:
-                    t = item.get('type', 'unknown')
-                    grouped.setdefault(t, []).append(item.get('name', 'unknown'))
-                
-                compact_outline = []
-                for t, names in grouped.items():
-                    name_str = ", ".join(names)
-                    if len(name_str) > 800:
-                        name_str = name_str[:800] + "... (truncated)"
-                    compact_outline.append({"type": f"grouped {t}s", "names": name_str})
-                outline_items = compact_outline
-                outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
-        
-        hint_pct = min(100, max(1, int(outline_tokens / max(1, original_tokens) * 100))) if original_tokens > 0 else 100
-        
-        return {
-            "status": "ok",
-            "file_path": normalized,
-            "language": found.get("language", "unknown"),
-            "total_chunks": len(outline_items),
-            "outline": outline_items,
-            "_token_info": {
-                "tokens_this_call": outline_tokens,
-                "tokens_if_raw_read": original_tokens,
-                "tokens_saved": max(0, original_tokens - outline_tokens),
-                "hint": f"Outline uses ~{hint_pct}% of raw file tokens"
-            }
-        }
+    # def get_file_outline(self, agent_id: str, file_path: str) -> Dict[str, Any]:
+    #     """
+    #     Get structural outline of a file — chunk names, types, signatures, line ranges.
+    #     No full content. Auto-indexes if not cached or stale.
+    #     """
+    #     normalized = os.path.normpath(file_path)
+    #     
+    #     # 1. Check cache via store (includes freshness check)
+    #     cached = self.store.retrieve_file_context(agent_id, normalized)
+    #     
+    #     if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
+    #         # Auto-index (re-index if stale)
+    #         if os.path.exists(normalized):
+    #             self.index_file(agent_id, normalized)
+    #             # Re-retrieve to get the new chunks
+    #             cached = self.store.retrieve_file_context(agent_id, normalized)
+    #     
+    #     if cached.get("status") != "cache_hit":
+    #         return {
+    #             "status": "error",
+    #             "message": f"File not found and could not be indexed: {normalized}"
+    #         }
+    #     
+    #     # We need the full file context object from the agent data to get the chunks
+    #     # retrieve_file_context return 'code_flow' which is a BST/Tree.
+    #     # But get_file_outline wants the raw chunks list for a flat overview.
+    #     contexts = self.store._load_agent_data(agent_id, "file_contexts")
+    #     found = next(
+    #         (ctx for ctx in contexts 
+    #          if os.path.normpath(ctx.get("file_path", "")) == normalized), 
+    #         None
+    #     )
+    #     
+    #     if found is None:
+    #          return {
+    #             "status": "error",
+    #             "message": f"File indexed but not found in store retrieval: {normalized}"
+    #         }
+    #     
+    #     # Extract outline from chunks
+    #     chunks = found.get("chunks", [])
+    #     outline_items = []
+    #     for chunk in chunks:
+    #         item = {
+    #             "name": chunk.get("name", "unknown"),
+    #             "type": chunk.get("type", "unknown"),
+    #             "start_line": chunk.get("start_line", 0),
+    #             "end_line": chunk.get("end_line", 0),
+    #         }
+    #         # Include signature (content first line only)
+    #         content = chunk.get("content", "")
+    #         if content:
+    #             first_line = content.split("\n")[0].strip()
+    #             item["signature"] = first_line
+    #             
+    #         outline_items.append(item)
+    #     
+    #     original_tokens = self._estimate_file_tokens(normalized)
+    #     outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+    #     
+    #     # Optimization for worst-case scenarios (many tiny functions)
+    #     if original_tokens > 0 and outline_tokens > original_tokens * 0.3:
+    #         # 1. Drop signatures, which are usually the longest part
+    #         for item in outline_items:
+    #             item.pop('signature', None)
+    #         outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+    #         
+    #         # 2. If still too large, drop line numbers
+    #         if outline_tokens > original_tokens * 0.5:
+    #             for item in outline_items:
+    #                 item.pop('start_line', None)
+    #                 item.pop('end_line', None)
+    #             outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+    #             
+    #         # 3. If outline is STILL too large, just group names by type
+    #         if outline_tokens > original_tokens * 0.8:
+    #             grouped = {}
+    #             for item in outline_items:
+    #                 t = item.get('type', 'unknown')
+    #                 grouped.setdefault(t, []).append(item.get('name', 'unknown'))
+    #             
+    #             compact_outline = []
+    #             for t, names in grouped.items():
+    #                 name_str = ", ".join(names)
+    #                 if len(name_str) > 800:
+    #                     name_str = name_str[:800] + "... (truncated)"
+    #                 compact_outline.append({"type": f"grouped {t}s", "names": name_str})
+    #             outline_items = compact_outline
+    #             outline_tokens = int(len(json.dumps(outline_items, separators=(',', ':'))) * 0.25)
+    #     
+    #     hint_pct = min(100, max(1, int(outline_tokens / max(1, original_tokens) * 100))) if original_tokens > 0 else 100
+    #     
+    #     return {
+    #         "status": "ok",
+    #         "file_path": normalized,
+    #         "language": found.get("language", "unknown"),
+    #         "total_chunks": len(outline_items),
+    #         "outline": outline_items,
+    #         "_token_info": {
+    #             "tokens_this_call": outline_tokens,
+    #             "tokens_if_raw_read": original_tokens,
+    #             "tokens_saved": max(0, original_tokens - outline_tokens),
+    #             "hint": f"Outline uses ~{hint_pct}% of raw file tokens"
+    #         }
+    #     }
     
     def list_directory(self, agent_id: str, path: str = "") -> Dict[str, Any]:
         """
@@ -198,25 +197,25 @@ class CodingAPI:
     # Tier 1 Features: Cross-Reference, Dependency Graph, Delta Update, Stats
     # =========================================================================
     
-    def cross_reference(self, agent_id: str, symbol: str) -> Dict[str, Any]:
-        """
-        Find all references to a symbol across indexed files.
-        Replaces grep_search for symbol usage lookups.
-        """
-        # Guard: empty or whitespace-only symbols would match everything
-        if not symbol or not symbol.strip():
-            return {
-                "symbol": symbol,
-                "total_references": 0,
-                "files_matched": 0,
-                "references": [],
-                "_token_info": {"hint": "Empty symbol — no references to find"}
-            }
-        result = self.store.find_symbol_references(agent_id, symbol)
-        result["_token_info"] = {
-            "hint": f"Found {result['total_references']} references across {result['files_matched']} files — no grep needed"
-        }
-        return result
+    # def cross_reference(self, agent_id: str, symbol: str) -> Dict[str, Any]:
+    #     """
+    #     Find all references to a symbol across indexed files.
+    #     Replaces grep_search for symbol usage lookups.
+    #     """
+    #     # Guard: empty or whitespace-only symbols would match everything
+    #     if not symbol or not symbol.strip():
+    #         return {
+    #             "symbol": symbol,
+    #             "total_references": 0,
+    #             "files_matched": 0,
+    #             "references": [],
+    #             "_token_info": {"hint": "Empty symbol — no references to find"}
+    #         }
+    #     result = self.store.find_symbol_references(agent_id, symbol)
+    #     result["_token_info"] = {
+    #         "hint": f"Found {result['total_references']} references across {result['files_matched']} files — no grep needed"
+    #     }
+    #     return result
     
     def dependency_graph(self, agent_id: str, file_path: str, depth: int = 1) -> Dict[str, Any]:
         """
@@ -451,91 +450,91 @@ class CodingAPI:
         
         return {"status": "error", "message": f"Invalid scope '{scope}'. Use 'file', 'stale', or 'all'."}
     
-    def summarize_context(
-        self, agent_id: str, file_path: str, verbosity: str = "brief"
-    ) -> Dict[str, Any]:
-        """
-        Return a file's context at configurable verbosity levels.
-        brief (~50 tokens), normal (code_flow), detailed (full chunks).
-        """
-        normalized = os.path.normpath(file_path)
-        
-        # Ensure indexed
-        cached = self.store.retrieve_file_context(agent_id, normalized)
-        if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
-            if os.path.exists(normalized):
-                self.index_file(agent_id, normalized)
-                cached = self.store.retrieve_file_context(agent_id, normalized)
-        
-        if cached.get("status") != "cache_hit":
-            return {"status": "error", "message": f"Could not retrieve context: {normalized}"}
-        
-        # Get full context data
-        contexts = self.store._load_agent_data(agent_id, "file_contexts")
-        found = next(
-            (ctx for ctx in contexts
-             if os.path.normpath(ctx.get("file_path", "")) == normalized),
-            None
-        )
-        if not found:
-            return {"status": "error", "message": f"Context not found in store: {normalized}"}
-        
-        chunks = found.get("chunks", [])
-        file_name = os.path.basename(normalized)
-        language = found.get("language", "unknown")
-        
-        if verbosity == "brief":
-            # Ultra-compact: file + language + chunk type counts + key names
-            type_counts = {}
-            key_names = []
-            for ch in chunks:
-                ct = ch.get("type", "block")
-                type_counts[ct] = type_counts.get(ct, 0) + 1
-                if ct in ("class", "function") and ch.get("name"):
-                    key_names.append(ch["name"])
-            
-            type_summary = ", ".join(f"{v} {k}s" for k, v in type_counts.items())
-            names_str = ", ".join(key_names[:8])
-            
-            return {
-                "status": "ok",
-                "verbosity": "brief",
-                "file": file_name,
-                "language": language,
-                "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
-                "tokens_used": len(f"{type_summary} {names_str}") // 4,
-            }
-        
-        elif verbosity == "detailed":
-            # Full chunks with content and summaries
-            detailed_chunks = []
-            for ch in chunks:
-                detailed_chunks.append({
-                    "name": ch.get("name", ""),
-                    "type": ch.get("type", ""),
-                    "content": ch.get("content", ""),
-                    "summary": ch.get("summary", ""),
-                    "keywords": ch.get("keywords", []),
-                    "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
-                })
-            return {
-                "status": "ok",
-                "verbosity": "detailed",
-                "file": file_name,
-                "language": language,
-                "chunks": detailed_chunks,
-                "total_chunks": len(detailed_chunks),
-            }
-        
-        else:  # "normal" — default: return code_flow tree
-            return {
-                "status": "ok",
-                "verbosity": "normal",
-                "file": file_name,
-                "language": language,
-                "code_flow": cached.get("code_flow", {}),
-                "freshness": cached.get("freshness", "unknown"),
-            }
+    # def summarize_context(
+    #     self, agent_id: str, file_path: str, verbosity: str = "brief"
+    # ) -> Dict[str, Any]:
+    #     """
+    #     Return a file's context at configurable verbosity levels.
+    #     brief (~50 tokens), normal (code_flow), detailed (full chunks).
+    #     """
+    #     normalized = os.path.normpath(file_path)
+    #     
+    #     # Ensure indexed
+    #     cached = self.store.retrieve_file_context(agent_id, normalized)
+    #     if cached.get("status") == "cache_miss" or cached.get("freshness") == "stale":
+    #         if os.path.exists(normalized):
+    #             self.index_file(agent_id, normalized)
+    #             cached = self.store.retrieve_file_context(agent_id, normalized)
+    #     
+    #     if cached.get("status") != "cache_hit":
+    #         return {"status": "error", "message": f"Could not retrieve context: {normalized}"}
+    #     
+    #     # Get full context data
+    #     contexts = self.store._load_agent_data(agent_id, "file_contexts")
+    #     found = next(
+    #         (ctx for ctx in contexts
+    #          if os.path.normpath(ctx.get("file_path", "")) == normalized),
+    #         None
+    #     )
+    #     if not found:
+    #         return {"status": "error", "message": f"Context not found in store: {normalized}"}
+    #     
+    #     chunks = found.get("chunks", [])
+    #     file_name = os.path.basename(normalized)
+    #     language = found.get("language", "unknown")
+    #     
+    #     if verbosity == "brief":
+    #         # Ultra-compact: file + language + chunk type counts + key names
+    #         type_counts = {}
+    #         key_names = []
+    #         for ch in chunks:
+    #             ct = ch.get("type", "block")
+    #             type_counts[ct] = type_counts.get(ct, 0) + 1
+    #             if ct in ("class", "function") and ch.get("name"):
+    #                 key_names.append(ch["name"])
+    #         
+    #         type_summary = ", ".join(f"{v} {k}s" for k, v in type_counts.items())
+    #         names_str = ", ".join(key_names[:8])
+    #         
+    #         return {
+    #             "status": "ok",
+    #             "verbosity": "brief",
+    #             "file": file_name,
+    #             "language": language,
+    #             "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
+    #             "tokens_used": len(f"{type_summary} {names_str}") // 4,
+    #         }
+    #     
+    #     elif verbosity == "detailed":
+    #         # Full chunks with content and summaries
+    #         detailed_chunks = []
+    #         for ch in chunks:
+    #             detailed_chunks.append({
+    #                 "name": ch.get("name", ""),
+    #                 "type": ch.get("type", ""),
+    #                 "content": ch.get("content", ""),
+    #                 "summary": ch.get("summary", ""),
+    #                 "keywords": ch.get("keywords", []),
+    #                 "lines": f"{ch.get('start_line', '?')}-{ch.get('end_line', '?')}",
+    #             })
+    #         return {
+    #             "status": "ok",
+    #             "verbosity": "detailed",
+    #             "file": file_name,
+    #             "language": language,
+    #             "chunks": detailed_chunks,
+    #             "total_chunks": len(detailed_chunks),
+    #         }
+    #     
+    #     else:  # "normal" — default: return code_flow tree
+    #         return {
+    #             "status": "ok",
+    #             "verbosity": "normal",
+    #             "file": file_name,
+    #             "language": language,
+    #             "code_flow": cached.get("code_flow", {}),
+    #             "freshness": cached.get("freshness", "unknown"),
+    #         }
     
     def create_snapshot(self, agent_id: str, message: str = "Snapshot") -> Dict[str, Any]:
         """

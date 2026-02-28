@@ -27,10 +27,8 @@ You MUST use Manhattan MCP tools for ALL file operations — no exceptions, rega
 
 | Action | You MUST use | NOT this |
 |--------|-------------|----------|
-| Read code context | `summarize_context(detailed)` | `view_file`, `cat` |
+| Read code context | `search_codebase` | `view_file`, `cat` |
 | Search code | `search_codebase` | `grep_search`, `file_search`, `grep` |
-| View file structure | `get_file_outline` | `view_file_outline` |
-| Find symbol usage | `cross_reference` | `grep_search`, `grep` |
 | Trace dependencies | `dependency_graph` | manual import tracing |
 | Browse files | `list_directory` | `ls`, `find`, `list_dir` |
 | After creating a file | `index_file` on the new file | nothing |
@@ -38,7 +36,6 @@ You MUST use Manhattan MCP tools for ALL file operations — no exceptions, rega
 
 ## Advanced Navigation
 
-- Use `cross_reference` to find where functions/classes are used across the codebase.
 - Use `dependency_graph` to understand the import structure and call relationships.
 - Use `cache_stats` to check index health and get update recommendations.
 - Use `delta_update` for fast, incremental re-indexing after edits.
@@ -67,10 +64,7 @@ CLAUDE_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations.
 
-- You MUST use `summarize_context` (detailed) or `get_file_outline` for reading context
 - You MUST use `search_codebase` instead of `Grep`/`Search` for searching
-- You MUST use `get_file_outline` instead of outline tools
-- You MUST use `cross_reference` to find symbol usages (replaces Grep for symbols)
 - You MUST use `dependency_graph` to understand file relationships
 - You MUST use `list_directory` for efficient file browsing
 - You MUST call `delta_update` or `index_file` after creating or editing ANY file
@@ -90,10 +84,7 @@ GEMINI_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
 
-- You MUST use `summarize_context` (detailed) or `get_file_outline` for context
 - You MUST use `search_codebase` instead of `grep_search` for searching code
-- You MUST use `get_file_outline` instead of `view_file_outline`
-- You MUST use `cross_reference` for finding symbol usages
 - You MUST use `dependency_graph` for tracing imports/calls
 - You MUST use `list_directory` instead of standard listing tools
 - You MUST call `delta_update` (preferred) or `index_file` after edits
@@ -113,10 +104,7 @@ WINDSURF_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations.
 
-- You MUST use `summarize_context` or `get_file_outline` for reading context
 - You MUST use `search_codebase` instead of `grep_search` for searching
-- You MUST use `get_file_outline` instead of `view_file_outline`
-- You MUST use `cross_reference` for all symbol searches
 - You MUST use `dependency_graph` to understand architecture
 - You MUST use `list_directory` to explore indexed files
 - You MUST call `delta_update` or `index_file` after creating or editing ANY file
@@ -135,10 +123,7 @@ COPILOT_RULES = """\
 
 This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
 
-- You MUST use `mcp_manhattan_pip_summarize_context` or `get_file_outline` for context
 - You MUST use `mcp_manhattan_pip_search_codebase` instead of searching/grepping
-- You MUST use `mcp_manhattan_pip_get_file_outline` for file structure
-- You MUST use `mcp_manhattan_pip_cross_reference` to find symbol usages
 - You MUST use `mcp_manhattan_pip_dependency_graph` for import maps
 - You MUST use `mcp_manhattan_pip_list_directory` for navigation
 - You MUST call `mcp_manhattan_pip_delta_update` (preferred) or `index_file` after edits

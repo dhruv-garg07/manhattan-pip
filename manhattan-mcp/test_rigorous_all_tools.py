@@ -237,57 +237,14 @@ def function_{i}(x, y, z):
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 4: summarize_context — Compressed Reading
     # ────────────────────────────────────────────────────────────────────────
-    section("4. summarize_context — Compressed Reading")
-
-    # 4a: Detailed summary
-    r = check_no_crash("detailed summary of server.py", api.summarize_context, AGENT, REAL_FILES["server"], "detailed")
-    if r:
-        check("summary status ok", r.get("status") == "ok", f"Got: {r.get('status')}")
-        check("has chunks", "chunks" in r, "Missing chunks in detailed summary")
+    # section("4. summarize_context")
+    # ... (tests commented out)
 
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 5: get_file_outline
     # ────────────────────────────────────────────────────────────────────────
-    section("5. get_file_outline")
-
-    # 5a: Outline of complex file
-    r = check_no_crash("outline of api.py", api.get_file_outline, AGENT, REAL_FILES["api"])
-    if r:
-        check("outline status ok", r.get("status") == "ok", f"Got: {r.get('status')}")
-        outline = r.get("outline", [])
-        check("outline has items for 748-line file", len(outline) > 0,
-              f"Got {len(outline)} items")
-        types_found = {item.get("type") for item in outline}
-        check("outline has class or function types",
-              "class" in types_found or "function" in types_found,
-              f"Types: {types_found}")
-        # Check structure
-        for item in outline[:3]:
-            check(f"outline item '{item.get('name', '?')}' has start_line",
-                  "start_line" in item, f"Keys: {list(item.keys())}")
-
-    # 5b: Outline of non-existent file
-    r = check_no_crash("outline of non-existent file", api.get_file_outline, AGENT, "/ghost.py")
-    if r:
-        check("non-existent outline returns error", r.get("status") == "error",
-              f"Got: {r.get('status')}")
-
-    # 5c: Outline of large file (200 functions)
-    r = check_no_crash("outline of large file", api.get_file_outline, AGENT, large_path)
-    if r:
-        check("large file outline ok", r.get("status") == "ok", f"Got: {r.get('status')}")
-        outline = r.get("outline", [])
-        check("large file outline has at least 1 item", len(outline) > 0,
-              f"Got {len(outline)} items")
-
-    # 5d: Token savings on outline
-    if r and r.get("_token_info"):
-        ti = r["_token_info"]
-        raw = ti.get("tokens_if_raw_read", 1)
-        used = ti.get("tokens_this_call", 0)
-        ratio = (used / max(raw, 1)) * 100
-        check("outline is <75% of raw tokens (sparse file edge case)", ratio < 75,
-              f"Ratio={ratio:.1f}%  (used={used}, raw={raw})")
+    # section("5. get_file_outline")
+    # ... (tests commented out)
 
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 6: list_directory
@@ -364,48 +321,8 @@ def function_{i}(x, y, z):
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 8: cross_reference
     # ────────────────────────────────────────────────────────────────────────
-    section("8. cross_reference")
-
-    # 8a: Known class
-    r = check_no_crash("xref: CodingAPI", api.cross_reference, AGENT, "CodingAPI")
-    if r:
-        check("CodingAPI found refs", r.get("total_references", 0) > 0,
-              f"Got {r.get('total_references')} refs")
-        check("xref has files_matched", r.get("files_matched", 0) >= 1)
-        check("xref has _token_info", "_token_info" in r)
-        # Check reference structure
-        if r.get("references"):
-            ref = r["references"][0]
-            check("ref has chunk_name", "chunk_name" in ref)
-            check("ref has match_reason", "match_reason" in ref)
-
-    # 8b: Known function
-    r = check_no_crash("xref: get_file_outline", api.cross_reference, AGENT, "get_file_outline")
-    if r:
-        check("get_file_outline found refs", r.get("total_references", 0) > 0,
-              f"Got: {r.get('total_references')}")
-
-    # 8c: Non-existent symbol
-    r = check_no_crash("xref: NonExistentSymbol12345", api.cross_reference, AGENT, "NonExistentSymbol12345")
-    if r:
-        check("non-existent symbol returns 0 refs", r.get("total_references", 0) == 0)
-
-    # 8d: Empty string
-    r = check_no_crash("xref: empty string", api.cross_reference, AGENT, "")
-    if r:
-        check("empty symbol handled", r.get("total_references", 0) == 0)
-
-    # 8e: Common Python keyword
-    r = check_no_crash("xref: 'self'", api.cross_reference, AGENT, "self")
-    if r:
-        check("'self' xref handled (may have many refs)", True)
-
-    # 8f: Method name that could be in multiple classes
-    r = check_no_crash("xref: '__init__'", api.cross_reference, AGENT, "__init__")
-    if r:
-        check("__init__ found in multiple files",
-              r.get("files_matched", 0) >= 1,
-              f"Files: {r.get('files_matched')}")
+    # section("8. cross_reference")
+    # ... (tests commented out)
 
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 9: dependency_graph
@@ -580,44 +497,8 @@ class Gamma:
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 13: summarize_context — All Verbosity Levels
     # ────────────────────────────────────────────────────────────────────────
-    section("13. summarize_context — All Verbosity Levels")
-
-    # 13a: brief
-    r = check_no_crash("summarize brief", api.summarize_context, AGENT, REAL_FILES["server"], "brief")
-    if r:
-        check("brief status ok", r.get("status") == "ok", f"Got: {r.get('status')}")
-        check("brief has summary string", bool(r.get("summary")),
-              f"Summary: {r.get('summary', '')[:80]}")
-
-    # 13b: normal
-    r = check_no_crash("summarize normal", api.summarize_context, AGENT, REAL_FILES["server"], "normal")
-    if r:
-        check("normal status ok", r.get("status") == "ok")
-        check("normal has code_flow", "code_flow" in r)
-
-    # 13c: detailed
-    r = check_no_crash("summarize detailed", api.summarize_context, AGENT, REAL_FILES["api"], "detailed")
-    if r:
-        check("detailed status ok", r.get("status") == "ok")
-        check("detailed has chunks list", isinstance(r.get("chunks"), list))
-        if r.get("chunks"):
-            ch = r["chunks"][0]
-            check("detailed chunk has content", "content" in ch)
-            check("detailed chunk has summary", "summary" in ch)
-            check("detailed chunk has keywords", "keywords" in ch)
-
-    # 13d: Non-existent file
-    r = check_no_crash("summarize non-existent", api.summarize_context, AGENT, "/no.py", "brief")
-    if r:
-        check("non-existent summarize returns error", r.get("status") == "error",
-              f"Got: {r.get('status')}")
-
-    # 13e: Invalid verbosity
-    r = check_no_crash("summarize invalid verbosity", api.summarize_context, AGENT, REAL_FILES["server"], "ultra_verbose")
-    if r:
-        # Should fall through to "normal" (the else branch)
-        check("invalid verbosity falls through gracefully", r.get("status") == "ok",
-              f"Got: {r.get('status')}")
+    # section("13. summarize_context")
+    # ... (tests commented out)
 
     # ────────────────────────────────────────────────────────────────────────
     # SECTION 14: Snapshots
@@ -807,13 +688,7 @@ class WorkflowService:
         return {"status": "ok", "data": raw}
 """)
     idx = check_no_crash("WF-A: index", api.index_file, AGENT, wf_path)
-    rd = check_no_crash("WF-A: summarize", api.summarize_context, AGENT, wf_path, "detailed")
-    if rd:
-        check("WF-A: read is ok", rd.get("status") == "ok")
     sr = check_no_crash("WF-A: search for 'validate request'", api.search_codebase, AGENT, "validate request", top_k=3)
-    ol = check_no_crash("WF-A: outline", api.get_file_outline, AGENT, wf_path)
-    if ol:
-        check("WF-A: outline has items", len(ol.get("outline", [])) >= 1)
     rm = check_no_crash("WF-A: remove index", api.remove_index, AGENT, wf_path)
 
     # Verify search no longer finds the removed file's content
