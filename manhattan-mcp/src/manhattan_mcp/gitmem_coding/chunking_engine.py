@@ -60,7 +60,7 @@ class ChunkingEngine:
         raise NotImplementedError
 
     def _create_chunk(self, content: str, chunk_type: str, name: str, 
-                      start_line: int, end_line: int, language: str) -> CodeChunk:
+                      start_line: int, end_line: int, language: str, **kwargs) -> CodeChunk:
         """Helper to create a normalized CodeChunk."""
         
         # Add line numbers to the content for consistent output
@@ -80,7 +80,8 @@ class ChunkingEngine:
             start_line=start_line,
             end_line=end_line,
             language=language,
-            token_count=int(len(numbered_content) * TOKENS_PER_CHAR_RATIO)
+            token_count=int(len(numbered_content) * TOKENS_PER_CHAR_RATIO),
+            **kwargs
         )
 
 
@@ -111,6 +112,68 @@ class PythonChunker(ChunkingEngine):
             
             def get_segment(start_line, end_line) -> str:
                 return "\n".join(lines[start_line-1:end_line])
+
+            def get_signature(node):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    try:
+                        # Extract signature part only
+                        import inspect
+                        # ast.unparse is Python 3.9+
+                        full_code = ast.unparse(node)
+                        first_line = full_code.split('\n')[0]
+                        return first_line.rstrip(':')
+                    except (AttributeError, Exception):
+                        # Fallback for older python or errors
+                        return node.name
+                return ""
+
+            def get_parameters(node):
+                params = []
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    for arg in node.args.args:
+                        arg_info = {"name": arg.arg}
+                        if arg.annotation:
+                            try:
+                                arg_info["type"] = ast.unparse(arg.annotation)
+                            except: pass
+                        params.append(arg_info)
+                return params
+
+            def get_return_type(node):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.returns:
+                    try:
+                        return ast.unparse(node.returns)
+                    except: pass
+                return ""
+
+            def get_calls(node):
+                calls = []
+                for sub_node in ast.walk(node):
+                    if isinstance(sub_node, ast.Call):
+                        call_info = {}
+                        try:
+                            call_info["target"] = ast.unparse(sub_node.func)
+                            call_info["line"] = getattr(sub_node, 'lineno', node.lineno)
+                            # Simple extraction of args
+                            args_passed = [ast.unparse(a) for a in sub_node.args]
+                            kwargs_passed = [f"{k.arg}={ast.unparse(k.value)}" for k in sub_node.keywords if k.arg]
+                            call_info["parameters_passed"] = ", ".join(args_passed + kwargs_passed)
+                        except: continue
+                        calls.append(call_info)
+                return calls
+
+            def get_external_imports(tree):
+                externals = []
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Import):
+                        for name in node.names:
+                            externals.append(name.name.split('.')[0])
+                    elif isinstance(node, ast.ImportFrom):
+                        if node.level == 0 and node.module:
+                            externals.append(node.module.split('.')[0])
+                return sorted(list(set(externals)))
+
+            external_imports = get_external_imports(tree)
 
             def process_nodes(nodes, prefix=""):
                 buffer = []
@@ -149,6 +212,11 @@ class PythonChunker(ChunkingEngine):
                     
                     if prefix:
                         name = f"{prefix}.[{name}]" if len(names) > 1 else f"{prefix}.{name}"
+                    
+                    # For mixed/block chunks, we can still collect calls
+                    chunk_calls = []
+                    for n in buffer:
+                        chunk_calls.extend(get_calls(n))
                         
                     chunks.append(self._create_chunk(
                         content=get_segment(start, end),
@@ -156,7 +224,9 @@ class PythonChunker(ChunkingEngine):
                         name=name,
                         start_line=start,
                         end_line=end,
-                        language="python"
+                        language="python",
+                        calls=chunk_calls,
+                        external_imports=external_imports
                     ))
                     buffer.clear()
 
@@ -167,24 +237,21 @@ class PythonChunker(ChunkingEngine):
                     if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                         flush()
                         
-                        # Determine chunk type
                         if isinstance(node, ast.ClassDef):
                             chunk_type = "class"
                         else:
-                            # If it's inside a class, it's a method. If inside a function, it's a function.
-                            # We can check parent chunk type if we passed it, but for now 
-                            # let's use a simple heuristic: if prefix has dots, we check the parent.
-                            # Better: just use "method" if prefix is set and we're in a class.
-                            # Let's just use "function" for nested functions and "method" for class members.
-                            is_in_class = False
-                            if prefix:
-                                # This is a bit simplified, but better than before
-                                is_in_class = True # Default if prefix exists
-                            
+                            is_in_class = True if prefix else False
                             chunk_type = "method" if is_in_class else "function"
                             
-                        # Format name
                         name = f"{prefix}.{node.name}" if prefix else node.name
+                        
+                        extra_metadata = {
+                            "signature": get_signature(node),
+                            "parameters": get_parameters(node),
+                            "return_type": get_return_type(node),
+                            "calls": get_calls(node),
+                            "external_imports": external_imports
+                        }
                         
                         chunks.append(self._create_chunk(
                             content=get_segment(node.lineno, node.end_lineno),
@@ -192,10 +259,10 @@ class PythonChunker(ChunkingEngine):
                             name=name,
                             start_line=node.lineno,
                             end_line=node.end_lineno,
-                            language="python"
+                            language="python",
+                            **extra_metadata
                         ))
-                        # Recurse into children (nested functions/classes)
-                        # We should skip very small bodies if they are just 'pass' or simple assignments
+                        
                         if len(node.body) > 1 or (len(node.body) == 1 and not isinstance(node.body[0], (ast.Pass, ast.Expr))):
                             process_nodes(node.body, prefix=name)
                     else:

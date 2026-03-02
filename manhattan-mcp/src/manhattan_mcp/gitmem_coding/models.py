@@ -227,6 +227,13 @@ class CodeChunk:
     keywords: List[str] = field(default_factory=list)
     summary: str = ""  # Lossless restatement
 
+    # Enhanced metadata fields
+    signature: str = ""
+    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    return_type: str = ""
+    calls: List[Dict[str, Any]] = field(default_factory=list) # [{target, line, parameters_passed, return_used_as}]
+    external_imports: List[str] = field(default_factory=list)
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 

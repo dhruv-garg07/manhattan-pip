@@ -260,17 +260,78 @@ class CodingAPI:
             )
             if found:
                 for chunk in found.get("chunks", []):
-                    if chunk.get("type") in ("method", "function"):
-                        content = chunk.get("content", "")
-                        # Find obj.method() calls where obj is a known class
-                        ext_calls = re.findall(r'self\.(\w+)\.(\w+)\s*\(', content)
-                        for obj_attr, method in ext_calls:
-                            calls_to.append({
-                                "target": f"{obj_attr}.{method}",
-                                "from": chunk.get("name", "unknown"),
-                                "line": chunk.get("start_line", 0)
-                            })
+                    # Use the extracted calls from AST
+                    chunk_calls = chunk.get("calls", [])
+                    if not chunk_calls:
+                        # Fallback for old indices: Regex based
+                        if chunk.get("type") in ("method", "function"):
+                            content = chunk.get("content", "")
+                            ext_calls = re.findall(r'self\.(\w+)\.(\w+)\s*\(', content)
+                            for obj_attr, method in ext_calls:
+                                chunk_calls.append({
+                                    "target": f"{obj_attr}.{method}",
+                                    "line": chunk.get("start_line", 0)
+                                })
+                    
+                    for call in chunk_calls:
+                        call_entry = {
+                            "target": call.get("target"),
+                            "from": chunk.get("name", "unknown"),
+                            "line": call.get("line", 0),
+                            "signature": call.get("signature", ""),
+                            "parameters_passed": call.get("parameters_passed", ""),
+                            "return_used_as": call.get("return_used_as", "")
+                        }
+                        calls_to.append(call_entry)
             
+            # Inbound calls (called_by)
+            called_by = []
+            for other_ctx in contexts:
+                other_path = other_ctx.get("file_path", "")
+                if other_path == normalized: continue
+                for other_chunk in other_ctx.get("chunks", []):
+                    for call in other_chunk.get("calls", []):
+                        target = call.get("target", "")
+                        # Try to match target with this file's functions/classes
+                        if target == module_name or target.startswith(f"{module_name}."):
+                            called_by.append({
+                                "caller": other_chunk.get("name", "unknown"),
+                                "caller_file": os.path.basename(other_path),
+                                "line": call.get("line", 0)
+                            })
+
+            # External packages
+            external_packages = {}
+            # We can use the external_imports collected by chunking_engine
+            collected_externals = found.get("external_imports", []) if found else []
+            for ext in collected_externals:
+                # Mocking version/installed check for now as we don't have a reliable way to check package versions easily without pip
+                external_packages[ext] = {"version": "unknown", "installed": True}
+
+            # Unused functions (dead code detection)
+            # A simple heuristic: if a function is NOT in called_by and NOT called within the same file (self calls)
+            # This is complex to do perfectly without a full symbol resolver, but we can do a best effort.
+            unused_functions = []
+            if found:
+                all_calls_to_this_file = [c["caller"] for c in called_by]
+                for chunk in found.get("chunks", []):
+                    if chunk.get("type") in ("function", "method"):
+                        cname = chunk.get("name", "")
+                        # Check if cname is called in any chunk of the SAME file
+                        is_called_internally = False
+                        for other_chunk in found.get("chunks", []):
+                            for call in other_chunk.get("calls", []):
+                                if call.get("target") == cname or call.get("target") == f"self.{cname.split('.')[-1]}":
+                                    is_called_internally = True
+                                    break
+                        
+                        if not is_called_internally and cname not in all_calls_to_this_file:
+                            unused_functions.append({
+                                "function": cname,
+                                "line": chunk.get("start_line", 0),
+                                "reason": "no_external_callers"
+                            })
+
             # Depth > 1: follow transitive imports
             transitive_imports = []
             if depth > 1:
@@ -296,6 +357,9 @@ class CodingAPI:
                 "imports": import_modules,
                 "imported_by": [ib["file_path"] for ib in imported_by],
                 "calls_to": calls_to,
+                "called_by": called_by,
+                "external_packages": external_packages,
+                "unused_functions": unused_functions,
                 "graph_summary": f"{file_basename} depends on {len(import_modules)} modules and is used by {len(imported_by)} modules"
             }
             
@@ -598,6 +662,139 @@ class CodingAPI:
                 "count": count
             }
         return {"status": "ok", "profile": profile}
+
+    def usage_analysis(self, agent_id: str, file_path: str) -> Dict[str, Any]:
+        """
+        Analyze code usage within a file: defined vs used functions, unused params.
+        """
+        normalized = os.path.normpath(file_path)
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        found = next((ctx for ctx in contexts if os.path.normpath(ctx.get("file_path", "")) == normalized), None)
+        
+        if not found:
+            return {"status": "error", "message": f"File not indexed: {file_path}"}
+            
+        functions_defined = []
+        functions_used_externally = []
+        functions_unused = []
+        parameters_unused = []
+        
+        # 1. Identify all defined functions/methods
+        for chunk in found.get("chunks", []):
+            if chunk.get("type") in ("function", "method"):
+                functions_defined.append({
+                    "name": chunk.get("name"),
+                    "line": chunk.get("start_line")
+                })
+                
+        # 2. Check external usage (called_by)
+        module_name = os.path.splitext(os.path.basename(normalized))[0]
+        for other_ctx in contexts:
+            if os.path.normpath(other_ctx.get("file_path", "")) == normalized: continue
+            for other_chunk in other_ctx.get("chunks", []):
+                for call in other_chunk.get("calls", []):
+                    target = call.get("target", "")
+                    if target == module_name or target.startswith(f"{module_name}."):
+                        func_name = target.split('.')[-1] if '.' in target else target
+                        if func_name not in functions_used_externally:
+                            functions_used_externally.append(func_name)
+                            
+        # 3. Identify unused functions (simplistic check)
+        used_internal = set()
+        for chunk in found.get("chunks", []):
+            for call in chunk.get("calls", []):
+                target = call.get("target", "")
+                if target.startswith("self."):
+                    used_internal.add(target.split('.')[-1])
+                elif target in [f["name"] for f in functions_defined]:
+                    used_internal.add(target)
+                    
+        for f in functions_defined:
+            name = f["name"].split('.')[-1] if '.' in f["name"] else f["name"]
+            if name not in functions_used_externally and name not in used_internal:
+                functions_unused.append(f)
+                
+        # 4. Parameters Unused (very simplistic AST-based check)
+        # Check if param name appears in function body content (excluding signature)
+        for chunk in found.get("chunks", []):
+            if chunk.get("type") in ("function", "method"):
+                params = chunk.get("parameters", [])
+                full_content = chunk.get("content", "").lower()
+                
+                # Numbered content format: "line:1 def foo(x): line:2   return x"
+                # We want to skip the signature part. 
+                # A simple way: find the first line number after the start line.
+                start_match = re.search(fr'line:{chunk.get("start_line")}\s', full_content)
+                if start_match:
+                    next_line = chunk.get("start_line") + 1
+                    body_match = re.search(fr'line:{next_line}\s', full_content)
+                    if body_match:
+                        body_content = full_content[body_match.start():]
+                    else:
+                        # Only one line (the signature itself, e.g. one-liner)
+                        body_content = ""
+                else:
+                    body_content = full_content
+
+                for p in params:
+                    pname = p["name"].lower()
+                    if pname in ("self", "cls"): continue
+                    # check if pname is a word in body
+                    if not re.search(fr'\b{pname}\b', body_content):
+                        parameters_unused.append({
+                            "function": chunk.get("name"),
+                            "param": pname,
+                            "line": chunk.get("start_line")
+                        })
+                        
+        return {
+            "functions_defined": functions_defined,
+            "functions_used_externally": list(functions_used_externally),
+            "functions_unused": functions_unused,
+            "parameters_unused": parameters_unused
+        }
+
+    def circular_dependency_check(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Check for circular dependencies in the indexed codebase.
+        """
+        contexts = self.store._load_agent_data(agent_id, "file_contexts")
+        graph = {} # module -> list of imported modules
+        
+        for ctx in contexts:
+            path = ctx.get("file_path", "")
+            mod_name = os.path.splitext(os.path.basename(path))[0]
+            imports = self.store.get_file_imports(agent_id, path)
+            graph[mod_name] = [imp["module"].split('.')[0] for imp in imports]
+            
+        cycles = []
+        def find_cycles(node, visited, stack, path):
+            visited.add(node)
+            stack.add(node)
+            path.append(node)
+            
+            for neighbor in graph.get(node, []):
+                if neighbor not in visited:
+                    find_cycles(neighbor, visited, stack, path)
+                elif neighbor in stack:
+                    # Cycle found
+                    cycle_start_idx = path.index(neighbor)
+                    cycles.append(path[cycle_start_idx:] + [neighbor])
+            
+            stack.remove(node)
+            path.pop()
+
+        visited = set()
+        for node in graph:
+            if node not in visited:
+                find_cycles(node, visited, set(), [])
+                
+        return {
+            "has_circular_deps": len(cycles) > 0,
+            "cycles_found": cycles,
+            "graph_type": "DAG" if not cycles else "DCG",
+            "module_count": len(graph)
+        }
     
     # =========================================================================
     # CRUD Operations (renamed for agent-facing tools)
@@ -618,7 +815,7 @@ class CodingAPI:
         """
         return self._ingest_file(agent_id, file_path, chunks)
 
-    def search_codebase(self, agent_id: str, query: str, top_k: int = 5, file_paths: List[str] = None) -> Dict[str, Any]:
+    def search_codebase(self, agent_id: str, query: str, top_k: int = 5, file_paths: List[str] = None, trace_calls: bool = False, group_by: str = None) -> Dict[str, Any]:
         """
         Search the indexed codebase with hybrid semantic + keyword search.
         Alias: get_mem.
@@ -626,6 +823,59 @@ class CodingAPI:
         start_t = time.perf_counter()
         results = self.retriever.search(agent_id, query, top_k=top_k, file_paths_filter=file_paths)
         self._record_perf("search", (time.perf_counter() - start_t) * 1000)
+        
+        # Call tracing
+        if trace_calls:
+            call_chain = []
+            for res in results.get("results", []):
+                chunk = res.get("chunk", {})
+                file_path = res.get("file_path", "")
+                fname = os.path.basename(file_path)
+                cname = chunk.get("name", "unknown")
+                line = chunk.get("start_line", 0)
+                call_chain.append(f"{fname}:{cname} [line {line}]")
+                
+                # Trace one level of calls from this chunk
+                for call in chunk.get("calls", []):
+                    call_chain.append(f"  → {call.get('target')} [line {call.get('line')}]")
+            results["call_chain"] = call_chain
+            
+        # Semantic grouping
+        if group_by == "semantic_purpose":
+            grouped = {
+                "storage_operations": [],
+                "search_operations": [],
+                "encoding_operations": [],
+                "llm_interactions": [],
+                "other": []
+            }
+            
+            purpose_map = {
+                "storage": ["storage", "store", "save", "db", "database", "insert", "update", "delete", "filesystem"],
+                "search": ["search", "find", "query", "lookup", "retrieval", "retriever"],
+                "encoding": ["encoding", "encode", "embed", "vector", "token", "hash"],
+                "llm": ["llm", "chat", "model", "prompt", "completion", "generate"]
+            }
+            
+            for res in results.get("results", []):
+                chunk = res.get("chunk", {})
+                content = (chunk.get("content", "") + " " + chunk.get("summary", "")).lower()
+                
+                found_group = False
+                for group, keywords in purpose_map.items():
+                    if any(kw in content for kw in keywords):
+                        if group == "storage": grouped["storage_operations"].append(res)
+                        elif group == "search": grouped["search_operations"].append(res)
+                        elif group == "encoding": grouped["encoding_operations"].append(res)
+                        elif group == "llm": grouped["llm_interactions"].append(res)
+                        found_group = True
+                        break
+                
+                if not found_group:
+                    grouped["other"].append(res)
+            
+            results["grouped_results"] = grouped
+
         return results
 
     def remove_index(self, agent_id: str, file_path: str) -> bool:

@@ -639,8 +639,7 @@ class CodingHybridRetriever:
                     k: v for k, v in chunk.items()
                     if k not in (
                         "hash_id", "embedding_id", "vector",
-                        "start_line", "end_line", "token_count",
-                        "language"
+                        "token_count", "language"
                     )
                 }
 
