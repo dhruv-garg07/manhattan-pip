@@ -1,0 +1,809 @@
+{
+  "codinghybridretriever": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingcontextstore": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding_file_system": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "code": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_perf_tracker": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_hashlib": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_estimate_file_tokens": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  ".block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.__init__": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.__init__.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._record_perf": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._estimate_file_tokens": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._estimate_file_tokens.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._ingest_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._ingest_file.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI._record_perf.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "__init__": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_directory": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.get_token_savings": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.dependency_graph": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.delta_update": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.cache_stats": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.cache_stats.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.create_snapshot": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.compare_snapshots": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.compare_snapshots.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.create_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.create_mem.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.create_snapshot.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.delete_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.delete_mem.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.delta_update.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.dependency_graph.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.get_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.get_mem.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.get_token_savings.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.invalidate_cache": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.index_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.index_file.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.invalidate_cache.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_directory.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.summarize_context": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.performance_profile": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_indexed_files": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_indexed_files.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_mems": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.list_mems.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.performance_profile.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.reindex_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.reindex_file.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.search_codebase": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.remove_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.remove_index.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.search_codebase.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.summarize_context.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.usage_report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.update_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.update_mem.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "CodingAPI.usage_report.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_load_agent_data": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_ingest_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "append": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_save_global_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_re": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_record_perf": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "_save_agent_data": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "all_hash_ids": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "and": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "basename": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "assignment": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "cache": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "c_dict": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "builder": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunk": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "calls_to": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "cached": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "cache_stats": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "cache.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "cc": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "ch": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunkingengine": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunk_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunker": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunking_engine": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "class": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codebase": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codebase.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding_memory_builder": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding_hybrid_retriever": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding_vector_store": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "coding_store": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.list": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.get": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.dependency": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.delta": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.cache": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.create": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.compare": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.delete": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.invalidate": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.summarize": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.performance": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.reindex": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.search": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.remove": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.usage": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingapi.update": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingfilesystem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "import": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "dict": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingvectorstore": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "codingmemorybuilder": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "compact_outline": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "commit_snapshot": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delete_code_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "current": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "ctx": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "content": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "compare_snapshots": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "compare": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "context": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "context.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "create_snapshot": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "create": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "create_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delete": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delete_vectors": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delete_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "detailed_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "dependency_graph": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "dependency": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delta_update": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "delta": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "detect_language": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "hashlib": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "exception": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "encode": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "dumps": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "directory": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "directory.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "estimate": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_token_savings_report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_detailed_cache_stats": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "filesystem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "extend": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "exists": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "file.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "files": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "files.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_chunker": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "find_importers": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "findall": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "find_symbol_references": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "found": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_file_imports": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_diff": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_token_savings": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "get_usage_report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "getsize": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "grouped": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "graph": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "graph.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "time": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "json": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "import_modules": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "invalidate_stale": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "index_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "index.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "init": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "indexed": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "ingest": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "invalidate_cache": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "invalidate": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "item": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "invalidate_with_vectors": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "items": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "os": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "method": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list_indexed_files": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list_dir": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list_code_mems": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "key_names": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "keys": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list_directory": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "list_mems": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mem.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mems": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mems.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "normpath": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "new_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mod": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "mixed": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "norm_content": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "new_hashes": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "old_ctx": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "obj": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "old_hashes": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "re": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "outline_items": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "pop": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "perf_counter": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "path": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "perf": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "perf.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "performance": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "performance_profile": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "process_file_chunks": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "profile": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "profile.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "the": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "store": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "result": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "read": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "reindex_file": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "record": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "reindex": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "remove_index": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "remove": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "report.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "retrieve_file_context": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "sha256": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "setdefault": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "search_codebase": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "retriever": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "search": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "savings": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "savings.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "split": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "snapshot": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "snapshot.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "snapshots": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "snapshots.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "splitext": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "stats": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "stats.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "sub": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "strip": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "symbol": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "summarize": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "summarize_context": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "this": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "typing": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "type_counts": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "transitive_imports": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "to_dict": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "token": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "tokens": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "tokens.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "vector_store": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "update": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "update.block": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "usage_report": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "usage": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ],
+  "update_mem": [
+    "/Users/gargdhruv/Desktop/manhattan-pip/manhattan-mcp/src/manhattan_mcp/gitmem_coding/coding_api.py"
+  ]
+}

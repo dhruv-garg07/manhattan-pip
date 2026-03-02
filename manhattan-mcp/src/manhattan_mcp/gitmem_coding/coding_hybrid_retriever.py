@@ -647,10 +647,7 @@ class CodingHybridRetriever:
                 scored_chunks.append({
                     "file_path": file_path,
                     "chunk": summary_chunk,
-                    "score": round(final_score, 6),
-                    "match_type": "hybrid",
-                    "vector_score": round(vec_score, 6),
-                    "keyword_score": round(kw_score, 6),
+                    "score": round(final_score, 3)
                 })
 
         # Sort and return

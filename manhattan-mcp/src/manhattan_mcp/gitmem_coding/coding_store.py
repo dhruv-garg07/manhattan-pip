@@ -406,11 +406,8 @@ class CodingContextStore:
         summaries = []
         for ctx in sliced:
             summaries.append({
-                "context_id": ctx.get("id"),
                 "file_path": ctx.get("file_path"),
-                "language": ctx.get("language"),
-                "last_accessed": ctx.get("last_accessed_at"),
-                "size_bytes": ctx.get("size_bytes", 0)
+                "language": ctx.get("language")
             })
             
         return {

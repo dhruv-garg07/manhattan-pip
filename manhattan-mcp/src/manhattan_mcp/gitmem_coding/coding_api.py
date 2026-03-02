@@ -306,10 +306,7 @@ class CodingAPI:
             
         return {
             "status": "ok",
-            "results": batch_results,
-            "_token_info": {
-                "hint": f"Dependency graphs built from cached index for {len(file_paths)} files — no file reading required"
-            }
+            "results": batch_results
         }
     
     def delta_update(self, agent_id: str, file_path: str) -> Dict[str, Any]:
@@ -395,13 +392,7 @@ class CodingAPI:
             "chunks_added": len(added_ids),
             "chunks_removed": len(removed_ids), 
             "chunks_unchanged": len(unchanged_ids),
-            "total_chunks": len(new_chunks),
-            "embeddings_reused": len(unchanged_ids),
-            "embeddings_generated": len(added_ids),
-            "vectors_cleaned": len(removed_ids),
-            "_token_info": {
-                "hint": f"Delta update: reused {len(unchanged_ids)} embeddings, generated {len(added_ids)} new, removed {len(removed_ids)} stale"
-            }
+            "total_chunks": len(new_chunks)
         }
         return delta_info
     
@@ -519,8 +510,7 @@ class CodingAPI:
                 "verbosity": "brief",
                 "file": file_name,
                 "language": language,
-                "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}",
-                "tokens_used": len(f"{type_summary} {names_str}") // 4,
+                "summary": f"{file_name} ({language}): {len(chunks)} chunks — {type_summary}. Key: {names_str}"
             }
         
         elif verbosity == "detailed":
@@ -605,9 +595,7 @@ class CodingAPI:
             count = data["count"]
             profile[op] = {
                 "avg_ms": round(data["total_ms"] / count, 1) if count > 0 else 0,
-                "last_ms": data["last_ms"],
-                "count": count,
-                "total_ms": round(data["total_ms"], 1),
+                "count": count
             }
         return {"status": "ok", "profile": profile}
     
