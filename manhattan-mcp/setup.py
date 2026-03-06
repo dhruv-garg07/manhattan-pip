@@ -13,7 +13,7 @@ extensions = cythonize(
 
 setup(
     name="manhattan_mcp",
-    version="0.1.0",
+    version="1.0.0",
     # This tells setuptools that the 'manhattan_mcp' package is inside the 'src' directory
     package_dir={"": "src"},
     packages=find_packages(where="src"),
