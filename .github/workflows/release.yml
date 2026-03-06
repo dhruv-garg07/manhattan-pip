@@ -3,7 +3,7 @@ name: Build and Upload Protected Wheels
 on:
   push:
     tags:
-      - 'v*' # Runs when you push a version tag like v0.2.25
+      - 'v*'
 
 jobs:
   build_wheels:
@@ -11,8 +11,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # This spins up all three operating systems for you
         os: [ubuntu-latest, windows-latest, macos-latest]
+
+    # This tells GitHub to run all commands inside your subfolder
+    defaults:
+      run:
+        working-directory: ./manhattan-mcp
 
     steps:
       - uses: actions/checkout@v4
@@ -20,23 +24,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Use a stable version for maximum compatibility
+          python-version: '3.12'
 
       - name: Install build dependencies
         run: pip install cython setuptools wheel cibuildwheel
 
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        # We save the wheels one level UP so the next job can find them easily
+        run: python -m cibuildwheel --output-dir ../wheelhouse
         env:
-          # Tell cibuildwheel to use your Cython setup
           CIBW_BUILD_FRONTEND: "setuptools"
-          # Only build for modern Python versions (3.10, 3.11, 3.12)
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* pp* *-musllinux*"
 
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
+          path: ./wheelhouse/*.whl # Path is relative to the root
 
   upload_pypi:
     needs: [build_wheels]
