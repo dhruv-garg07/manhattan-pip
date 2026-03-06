@@ -1,0 +1,15 @@
+# Cython artifacts
+build/
+dist/
+*.c
+*.so
+*.pyd
+
+# Build and Metadata
+*.egg-info/
+build/
+dist/
+__pycache__/
+
+# Cython C-files (The "mess" you saw earlier)
+src/**/*.c
