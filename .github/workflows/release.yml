@@ -10,10 +10,10 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
-    # This tells GitHub to run all commands inside your subfolder
     defaults:
       run:
         working-directory: ./manhattan-mcp
@@ -30,16 +30,19 @@ jobs:
         run: pip install cython setuptools wheel cibuildwheel
 
       - name: Build wheels
-        # We save the wheels one level UP so the next job can find them easily
+        shell: bash
         run: python -m cibuildwheel --output-dir ../wheelhouse
         env:
-          CIBW_BUILD_FRONTEND: "setuptools"
+          CIBW_BUILD_FRONTEND: "pip"
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* pp* *-musllinux*"
+          CIBW_BUILD: "cp310-* cp311-* cp312-*"
+          CIBW_BEFORE_BUILD: "pip install cython setuptools wheel"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl # Path is relative to the root
+          path: wheelhouse/*.whl
 
   upload_pypi:
     needs: [build_wheels]
