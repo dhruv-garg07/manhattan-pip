@@ -1,27 +1,25 @@
 [build-system]
-# We tell the system it needs Cython and Setuptools to build the binary
 requires = ["setuptools>=61.0", "wheel", "Cython>=3.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "manhattan-mcp"
-version = "1.0.4"
-description = "Manhattan MCP Server - Token-Efficient Codebase Navigation (GitMem) for AI Agents"
+name = "gitmem"
+version = "0.0.0"
+description = "GitMem MCP Server - Token-Efficient Codebase Navigation for AI Agents"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     { name = "Agent Architects Studio" }
 ]
-keywords = ["mcp", "memory", "ai", "agent", "llm", "claude", "manhattan"]
+keywords = ["mcp", "gitmem", "memory", "ai", "agent", "llm", "claude"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "mcp>=1.0.0",
@@ -29,34 +27,24 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-]
-
 [project.scripts]
-manhattan-mcp = "manhattan_mcp.cli:main"
+# This allows users to run 'gitmem' in terminal instead of 'manhattan-mcp'
+gitmem = "manhattan_mcp.cli:main"
 
 [project.urls]
 Homepage = "https://themanhattanproject.ai"
-Documentation = "https://themanhattanproject.ai/mcp-docs"
-Repository = "https://github.com/agent-architects/manhattan-mcp"
+Repository = "https://github.com/agent-architects/gitmem"
 
 # --- SECURITY & BUILD CONFIGURATION ---
 
 [tool.setuptools]
-# Ensure we only look in the src directory
 package-dir = {"" = "src"}
-# Find the package automatically
 packages = {find = {where = ["src"]}}
 
 [tool.setuptools.package-data]
-# Explicitly include the compiled binaries in the package
+# This MUST match the folder name in /src exactly
 "manhattan_mcp" = ["*.so", "*.pyd"]
 
 [tool.setuptools.exclude-package-data]
-# THE KILL SWITCH: This prevents .py, .c, and .test files from entering the wheel
+# The Kill Switch: Ensures no source code or C files are leaked
 "*" = ["*.py", "*.c", "*.cpp", "*.h", "*_test.py"]
-# Note: __init__.py is often kept as a plain file to allow imports, 
-# but your logic files like server.py will be excluded.
