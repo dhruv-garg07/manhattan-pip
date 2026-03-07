@@ -9,7 +9,11 @@ extensions = cythonize(
         "src/manhattan_mcp/**/__init__.py",
         "src/manhattan_mcp/**/*_test.py"
     ],
-    compiler_directives={'language_level': "3", 'docstrings': False}
+    compiler_directives={
+    'language_level': "3",
+    'docstring': False,        # Note: singular 'docstring'
+    'emit_code_comments': False
+}
 )
 
 # This custom class tells setuptools to IGNORE the .py and .c files in the final wheel
