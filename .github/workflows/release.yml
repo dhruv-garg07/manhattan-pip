@@ -24,23 +24,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14' # Updated runner to 3.14
 
       - name: Install build dependencies
-        # 'build' is the most reliable frontend for PEP 517 binary packages
         run: pip install cython setuptools wheel cibuildwheel build
 
       - name: Build wheels
         shell: bash
         run: python -m cibuildwheel --output-dir ../wheelhouse
         env:
-          # Using 'build' ensures your setup.py extensions are correctly detected
           CIBW_BUILD_FRONTEND: "build"
           CIBW_BEFORE_BUILD: "pip install cython setuptools wheel"
-          CIBW_BUILD: "cp310-* cp311-* cp312-*"
+          # ADDED cp313 and cp314 to support newer Python versions
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_SKIP: "pp* *-musllinux*"
-          # This helps verbose logging to debug the compilation phase
-          CIBW_BUILD_VERBOSITY: "1"
+          # ADDED x86_64 to support both Intel and Apple Silicon Macs
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -51,9 +50,24 @@ jobs:
   upload_pypi:
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    # This ensures we only attempt upload if at least one wheel was built
-    if: success()
     steps:
+      - uses: actions/checkout@v4
+        with:
+          # Ensure we checkout the correct path for sdist
+          path: ./
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      # THIS IS THE MAGIC FALLBACK: It creates the .tar.gz source distribution
+      - name: Build sdist
+        run: |
+          pip install build
+          cd manhattan-mcp
+          python -m build --sdist . --outdir ../dist
+
       - uses: actions/download-artifact@v4
         with:
           pattern: cibw-wheels-*
