@@ -11,9 +11,9 @@ extensions = cythonize(
     ],
     compiler_directives={
         'language_level': "3",
-        'binding': True,           # REQUIRED for MCP/FastMCP to work
-        'embedsignature': True,    # Helps 'inspect' find the signature in the binary
-        'docstring': True,         # MCP usually needs docstrings for tool descriptions
+        'binding': True,         # This is the critical one for FastMCP
+        'embedsignature': True,  # Puts the signature in the docstring for inspect
+        'always_allow_keywords': True # Ensures MCP can pass named arguments
     }
 )
 
