@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manhattan-mcp"
-version = "1.0.1"
+version = "1.0.2"
 description = "Manhattan MCP Server - Token-Efficient Codebase Navigation (GitMem) for AI Agents"
 readme = "README.md"
 license = {text = "MIT"}
@@ -42,3 +42,21 @@ manhattan-mcp = "manhattan_mcp.cli:main"
 Homepage = "https://themanhattanproject.ai"
 Documentation = "https://themanhattanproject.ai/mcp-docs"
 Repository = "https://github.com/agent-architects/manhattan-mcp"
+
+# --- SECURITY & BUILD CONFIGURATION ---
+
+[tool.setuptools]
+# Ensure we only look in the src directory
+package-dir = {"" = "src"}
+# Find the package automatically
+packages = {find = {where = ["src"]}}
+
+[tool.setuptools.package-data]
+# Explicitly include the compiled binaries in the package
+"manhattan_mcp" = ["*.so", "*.pyd"]
+
+[tool.setuptools.exclude-package-data]
+# THE KILL SWITCH: This prevents .py, .c, and .test files from entering the wheel
+"*" = ["*.py", "*.c", "*.cpp", "*.h", "*_test.py"]
+# Note: __init__.py is often kept as a plain file to allow imports, 
+# but your logic files like server.py will be excluded.
