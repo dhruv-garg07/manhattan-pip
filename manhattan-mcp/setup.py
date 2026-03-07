@@ -10,10 +10,10 @@ extensions = cythonize(
         "src/manhattan_mcp/**/*_test.py"
     ],
     compiler_directives={
-    'language_level': "3",
-    'docstring': False,        # Note: singular 'docstring'
-    'emit_code_comments': False
-}
+        'language_level': "3",
+        'binding': False,           # This prevents metadata introspection
+        'emit_code_comments': False # Strips source comments from C code
+    }
 )
 
 # This custom class tells setuptools to IGNORE the .py and .c files in the final wheel
