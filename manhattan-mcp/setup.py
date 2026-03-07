@@ -11,8 +11,9 @@ extensions = cythonize(
     ],
     compiler_directives={
         'language_level': "3",
-        'binding': False,           # This prevents metadata introspection
-        'emit_code_comments': False # Strips source comments from C code
+        'binding': True,           # REQUIRED for MCP/FastMCP to work
+        'embedsignature': True,    # Helps 'inspect' find the signature in the binary
+        'docstring': True,         # MCP usually needs docstrings for tool descriptions
     }
 )
 
