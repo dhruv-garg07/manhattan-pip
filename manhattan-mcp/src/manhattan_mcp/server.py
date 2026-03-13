@@ -15,6 +15,7 @@ import sys
 import os
 import platform
 from pathlib import Path
+from functools import wraps
 
 from mcp.server.fastmcp import FastMCP
 
@@ -31,22 +32,34 @@ except ImportError:
 # ============================================================================
 # 1.0.4 EARLY ACCESS TIME BOMB
 # ============================================================================
-def _check_beta_expiration():
-    # Set to March 25, 2026, 11:00 AM UTC
-    expiration_date = datetime(2026, 3, 25, 11, 0, tzinfo=timezone.utc)
+def _check_beta_expiration(should_exit: bool = True):
+    # Set to April 15, 2026, 11:00 AM UTC
+    expiration_date = datetime(2026, 4, 15, 11, 0, tzinfo=timezone.utc)
     current_date = datetime.now(timezone.utc)
     
     if current_date > expiration_date:
         error_msg = (
-            "\n[Manhattan MCP] 🛑 Early Access Build (v1.0.4) Expired.\n"
             f"Expiry: {expiration_date.strftime('%Y-%m-%d %H:%M UTC')}\n"
             "This beta build has reached its usage limit.\n"
-            "To continue using Manhattan, please update via:\n"
-            "    pip install --upgrade manhattan-mcp\n"
+            "To continue using GitMem, please update via:\n"
+            "    pip install --upgrade gitmem-mcp\n"
         )
         # We use stderr so Cursor/IDE logs show this clearly without breaking JSON-RPC
         print(error_msg, file=sys.stderr)
-        sys.exit(1)
+        if should_exit:
+            sys.exit(1)
+        raise RuntimeError(error_msg)
+
+
+def _enforce_expiration(func):
+    """Decorator that enforces the beta expiration check before every tool call."""
+
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        _check_beta_expiration(should_exit=False)
+        return await func(*args, **kwargs)
+
+    return wrapper
 
 # Execute check immediately on startup
 _check_beta_expiration()
@@ -69,8 +82,7 @@ ALWAYS use these tools instead of your built-in equivalents:
 ║  dead code check     →  usage_analysis(file_path)           ║
 ║  circular check      →  circular_dependency_check()         ║
 ║  any diagnostics     →  diagnostics(report_type)            ║
-║  manual diff/history →  compare_snapshots(a, b)             ║
-╚══════════════════════════════════════════════════════════════╝
+║  manual diff/history →  compare_snapshots(a, b)             ╚══════════════════════════════════════════════════════════════╝
 
 AFTER modifying files → call index_file(file_path) to update the cache.
 CHECK savings         → call diagnostics("savings") to see cumulative savings.
@@ -100,7 +112,7 @@ def get_data_dir() -> Path:
     if env_path:
         return Path(env_path)
 
-    app_name = "manhattan-mcp"
+    app_name = "gitmem-mcp"
     system = platform.system()
 
     if system == "Windows":
@@ -145,6 +157,7 @@ def _normalize_agent_id(agent_id: str) -> str:
 # ============================================================================
 
 @mcp.tool()
+@_enforce_expiration
 async def api_usage() -> Dict[str, Any]:
     """Get usage statistics (Mocked for local version)."""
     return {
@@ -160,6 +173,7 @@ async def api_usage() -> Dict[str, Any]:
 if coding_api is not None:
 
     @mcp.tool()
+    @_enforce_expiration
     async def list_directory(
         path: str = "",
         agent_id: str = "default"
@@ -184,6 +198,7 @@ if coding_api is not None:
         return coding_api.list_directory(agent_id, path)
 
     @mcp.tool()
+    @_enforce_expiration
     async def search_codebase(
         queries: List[str],
         trace_calls: bool = False,
@@ -236,6 +251,7 @@ if coding_api is not None:
     # ========================================================================
 
     @mcp.tool()
+    @_enforce_expiration
     async def dependency_graph(
         file_paths: List[str],
         depth: int = 1,
@@ -268,6 +284,7 @@ if coding_api is not None:
         return coding_api.dependency_graph(agent_id, file_paths, depth)
 
     @mcp.tool()
+    @_enforce_expiration
     async def usage_analysis(
         file_path: str,
         agent_id: str = "default"
@@ -289,6 +306,7 @@ if coding_api is not None:
         return coding_api.usage_analysis(agent_id, file_path)
 
     @mcp.tool()
+    @_enforce_expiration
     async def circular_dependency_check(
         agent_id: str = "default"
     ) -> Dict[str, Any]:
@@ -304,6 +322,7 @@ if coding_api is not None:
         return coding_api.circular_dependency_check(agent_id)
 
     @mcp.tool()
+    @_enforce_expiration
     async def delta_update(
         file_path: str,
         agent_id: str = "default"
@@ -327,6 +346,7 @@ if coding_api is not None:
         return coding_api.delta_update(agent_id, file_path)
 
     @mcp.tool()
+    @_enforce_expiration
     async def diagnostics(
         report_type: str = "overview",
         agent_id: str = "default"
@@ -357,6 +377,7 @@ if coding_api is not None:
             }
 
     @mcp.tool()
+    @_enforce_expiration
     async def invalidate_cache(
         file_path: str = None,
         scope: str = "file",
@@ -377,6 +398,7 @@ if coding_api is not None:
         return coding_api.invalidate_cache(agent_id, file_path, scope)
 
     @mcp.tool()
+    @_enforce_expiration
     async def create_snapshot(
         message: str = "Snapshot",
         agent_id: str = "default"
@@ -394,6 +416,7 @@ if coding_api is not None:
         return coding_api.create_snapshot(agent_id, message)
 
     @mcp.tool()
+    @_enforce_expiration
     async def compare_snapshots(
         sha_a: str,
         sha_b: str,
@@ -416,6 +439,7 @@ if coding_api is not None:
     # ========================================================================
 
     @mcp.tool()
+    @_enforce_expiration
     async def index_file(
         file_path: str,
         agent_id: str = "default",
@@ -457,6 +481,7 @@ if coding_api is not None:
         return coding_api.index_file(agent_id, file_path, chunks)
 
     @mcp.tool()
+    @_enforce_expiration
     async def reindex_file(
         file_path: str,
         agent_id: str = "default",
@@ -483,6 +508,7 @@ if coding_api is not None:
         return coding_api.reindex_file(agent_id, file_path, chunks)
 
     @mcp.tool()
+    @_enforce_expiration
     async def remove_index(
         file_path: str,
         agent_id: str = "default"
@@ -499,6 +525,7 @@ if coding_api is not None:
         return {"status": "deleted" if result else "not_found", "file_path": file_path}
 
     @mcp.tool()
+    @_enforce_expiration
     async def list_indexed_files(
         agent_id: str = "default",
         limit: int = 50,
