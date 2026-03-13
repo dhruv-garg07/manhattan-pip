@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manhattan-mcp"
-version = "1.0.5"
+version = "1.0.6"
 description = "GitMem MCP Server - Token-Efficient Codebase Navigation for AI Agents"
 readme = "README.md"
 license = {text = "MIT"}
