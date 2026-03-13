@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14' # Updated runner to 3.14
+          python-version: '3.14'
 
       - name: Install build dependencies
         run: pip install cython setuptools wheel cibuildwheel build
@@ -35,10 +35,8 @@ jobs:
         env:
           CIBW_BUILD_FRONTEND: "build"
           CIBW_BEFORE_BUILD: "pip install cython setuptools wheel"
-          # ADDED cp313 and cp314 to support newer Python versions
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_SKIP: "pp* *-musllinux*"
-          # ADDED x86_64 to support both Intel and Apple Silicon Macs
           CIBW_ARCHS_MACOS: "x86_64 arm64"
 
       - name: Upload artifacts
@@ -52,28 +50,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Ensure we checkout the correct path for sdist
-          path: ./
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-
-      # THIS IS THE MAGIC FALLBACK: It creates the .tar.gz source distribution
-      - name: Build sdist
-        run: |
-          pip install build
-          cd manhattan-mcp
-          python -m build --sdist . --outdir ../dist
-
+      # Download all the compiled binary wheels
       - uses: actions/download-artifact@v4
         with:
           pattern: cibw-wheels-*
           path: dist
           merge-multiple: true
 
+      # Publish ONLY the protected wheels to PyPI
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
