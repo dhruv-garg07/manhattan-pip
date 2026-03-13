@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel", "Cython>=3.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gitmem"
-version = "0.0.0"
+name = "manhattan-mcp"
+version = "1.0.5"
 description = "GitMem MCP Server - Token-Efficient Codebase Navigation for AI Agents"
 readme = "README.md"
 license = {text = "MIT"}
@@ -12,14 +12,15 @@ requires-python = ">=3.10"
 authors = [
     { name = "Agent Architects Studio" }
 ]
-keywords = ["mcp", "gitmem", "memory", "ai", "agent", "llm", "claude"]
+keywords = ["mcp", "gitmem", "memory", "ai", "agent", "llm", "claude", "manhattan"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "mcp>=1.0.0",
@@ -28,12 +29,14 @@ dependencies = [
 ]
 
 [project.scripts]
-# This allows users to run 'gitmem' in terminal instead of 'manhattan-mcp'
+# Users can still run the server using the gitmem command
 gitmem = "manhattan_mcp.cli:main"
+manhattan-mcp = "manhattan_mcp.cli:main"
 
 [project.urls]
 Homepage = "https://themanhattanproject.ai"
-Repository = "https://github.com/agent-architects/gitmem"
+Documentation = "https://themanhattanproject.ai/mcp-docs"
+Repository = "https://github.com/agent-architects/manhattan-mcp"
 
 # --- SECURITY & BUILD CONFIGURATION ---
 
@@ -42,7 +45,6 @@ package-dir = {"" = "src"}
 packages = {find = {where = ["src"]}}
 
 [tool.setuptools.package-data]
-# This MUST match the folder name in /src exactly
 "manhattan_mcp" = ["*.so", "*.pyd"]
 
 [tool.setuptools.exclude-package-data]
