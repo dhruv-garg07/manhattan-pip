@@ -33,8 +33,8 @@ except ImportError:
 # 1.0.4 EARLY ACCESS TIME BOMB
 # ============================================================================
 def _check_beta_expiration(should_exit: bool = True):
-    # Set to April 15, 2026, 11:00 AM UTC
-    expiration_date = datetime(2026, 4, 15, 11, 0, tzinfo=timezone.utc)
+    # Set to March 14, 2026, 11:00 AM UTC
+    expiration_date = datetime(2026, 3, 14, 11, 0, tzinfo=timezone.utc)
     current_date = datetime.now(timezone.utc)
     
     if current_date > expiration_date:
