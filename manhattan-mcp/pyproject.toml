@@ -37,7 +37,6 @@ gitmem-mcp = "manhattan_mcp.cli:main"
 [project.urls]
 Homepage = "https://themanhattanproject.ai"
 Documentation = "https://themanhattanproject.ai/mcp-docs"
-Repository = "https://github.com/agent-architects/gitmem-mcp"
 
 # --- SECURITY & BUILD CONFIGURATION ---
 
