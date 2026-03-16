@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "gitmem_mcp": {
+      "command": "gitmem",
+      "args": ["start"],
+      "env": {
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      },
+      "disabledTools": []
+    }
+  }
+}

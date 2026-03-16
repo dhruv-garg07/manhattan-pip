@@ -32,12 +32,12 @@ dependencies = [
 [project.scripts]
 # Users can still run the server using the gitmem command
 gitmem = "manhattan_mcp.cli:main"
-manhattan-mcp = "manhattan_mcp.cli:main"
+gitmem-mcp = "manhattan_mcp.cli:main"
 
 [project.urls]
 Homepage = "https://themanhattanproject.ai"
 Documentation = "https://themanhattanproject.ai/mcp-docs"
-Repository = "https://github.com/agent-architects/manhattan-mcp"
+Repository = "https://github.com/agent-architects/gitmem-mcp"
 
 # --- SECURITY & BUILD CONFIGURATION ---
 
