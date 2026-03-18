@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitmem-mcp"
-version = "1.0.0"
+version = "0.0.1"
 description = "GitMem MCP Server - Token-Efficient Codebase Navigation for AI Agents"
 readme = "README.md"
 license = {text = "MIT"}

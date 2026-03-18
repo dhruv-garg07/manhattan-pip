@@ -2,9 +2,13 @@
 Rules file templates for different AI coding clients.
 
 Each template contains instructions that tell the client agent to
-ALWAYS use Manhattan MCP tools — framed as a mandatory project
+ALWAYS use GitMem MCP tools — framed as a mandatory project
 requirement, not an optional optimization.
 """
+
+# NOTE: The MCP server is distributed as the `gitmem-mcp` package
+# (Python module `manhattan_mcp`). The tools referenced below are the
+# ones exposed by that server (e.g., search_codebase, list_directory, etc.).
 
 # ============================================================================
 # Cursor: .cursor/rules/manhattan.mdc
@@ -14,14 +18,14 @@ requirement, not an optional optimization.
 
 CURSOR_RULES = """\
 ---
-description: Manhattan MCP — MANDATORY code navigation and indexing system
+description: GitMem MCP — MANDATORY code navigation and indexing system
 alwaysApply: true
 ---
 
-# Manhattan MCP — MANDATORY
+# GitMem MCP — MANDATORY
 
-This project uses Manhattan MCP to maintain a live code index.
-You MUST use Manhattan MCP tools for ALL file operations — no exceptions, regardless of task size.
+This project uses GitMem MCP to maintain a live code index.
+You MUST use GitMem MCP tools for ALL file operations — no exceptions, regardless of task size.
 
 ## Required tool mapping
 
@@ -37,14 +41,33 @@ You MUST use Manhattan MCP tools for ALL file operations — no exceptions, rega
 ## Advanced Navigation
 
 - Use `dependency_graph` to understand the import structure and call relationships.
-- Use `cache_stats` to check index health and get update recommendations.
+- Use `diagnostics("cache")` to check index health and get update recommendations.
 - Use `delta_update` for fast, incremental re-indexing after edits.
+
+## Full MCP tool reference
+
+- `search_codebase(queries, ...)` — semantic + keyword search across indexed code.
+- `list_directory(path)` — browse indexed files and folders.
+- `api_usage()` — get MCP usage/status information.
+- `usage_analysis(file_path)` — identify unused functions/params in a file.
+- `circular_dependency_check()` — detect import cycles.
+- `dependency_graph(file_paths, depth)` — view import + call graph.
+- `diagnostics(report_type="cache")` — cache health; also `report_type="savings"` for token savings.
+- `delta_update(file_path)` — incrementally re-index changed files.
+- `index_file(file_path)` / `reindex_file(file_path)` — full indexing operations.
+- `remove_index(file_path)` — remove a file from the index.
+- `list_indexed_files(limit, offset)` — list indexed files and metadata.
+- `invalidate_cache(file_path, scope)` — flush stale cache entries.
+- `create_snapshot(message)` / `compare_snapshots(sha_a, sha_b)` — snapshot state and diff changes.
 
 ## Why this is mandatory
 
-Every file read through Manhattan MCP automatically updates the project's code index.
+Every file read through GitMem MCP automatically updates the project's code index.
 Skipping these tools breaks the index, causing stale search results for all team members.
 This is a project policy, not a suggestion.
+
+## If the MCP tools are unavailable
+If a GitMem MCP tool call fails or the MCP server is unreachable, you may fall back to standard tools (e.g., `view_file`, `cat`, `grep_search`, `file_search`, `ls`, `find`), but you must clearly explain that you are doing so because the MCP tools are not working.
 
 ## The ONLY exception
 
@@ -60,16 +83,36 @@ Even then, call `index_file` after making the edit.
 
 CLAUDE_RULES = """\
 
-## Manhattan MCP — MANDATORY
+## GitMem MCP — MANDATORY
 
-This project requires Manhattan MCP for ALL file operations.
+This project requires GitMem MCP for ALL file operations.
 
 - You MUST use `search_codebase` instead of `Grep`/`Search` for searching
 - You MUST use `dependency_graph` to understand file relationships
 - You MUST use `list_directory` for efficient file browsing
 - You MUST call `delta_update` or `index_file` after creating or editing ANY file
 
-Use `cache_stats` to see index health. This keeps the project's code index up to date. Skipping these tools is a policy violation.
+Use `diagnostics("cache")` to see index health. This keeps the project's code index up to date. Skipping these tools is a policy violation.
+
+## Full MCP tool reference
+
+- `search_codebase(queries, ...)` — semantic + keyword search across indexed code.
+- `list_directory(path)` — browse indexed files and folders.
+- `api_usage()` — get MCP usage/status information.
+- `usage_analysis(file_path)` — identify unused functions/params in a file.
+- `circular_dependency_check()` — detect import cycles.
+- `dependency_graph(file_paths, depth)` — view import + call graph.
+- `diagnostics(report_type="cache")` — cache health; also `report_type="savings"` for token savings.
+- `delta_update(file_path)` — incrementally re-index changed files.
+- `index_file(file_path)` / `reindex_file(file_path)` — full indexing operations.
+- `remove_index(file_path)` — remove a file from the index.
+- `list_indexed_files(limit, offset)` — list indexed files and metadata.
+- `invalidate_cache(file_path, scope)` — flush stale cache entries.
+- `create_snapshot(message)` / `compare_snapshots(sha_a, sha_b)` — snapshot state and diff changes.
+
+## If the MCP tools are unavailable
+If a GitMem MCP tool call fails or the MCP server is unreachable, you may fall back to standard tools (e.g., `view_file`, `cat`, `grep_search`, `file_search`, `ls`, `find`), but be clear that you are doing so because the MCP tools are not working.
+
 Only exception: use built-in read when you need exact line numbers for a diff.
 """
 
@@ -80,16 +123,36 @@ Only exception: use built-in read when you need exact line numbers for a diff.
 
 GEMINI_RULES = """\
 
-## Manhattan MCP — MANDATORY
+## GitMem MCP — MANDATORY
 
-This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
+This project requires GitMem MCP for ALL file operations — no exceptions regardless of task size.
 
 - You MUST use `search_codebase` instead of `grep_search` for searching code
 - You MUST use `dependency_graph` for tracing imports/calls
 - You MUST use `list_directory` instead of standard listing tools
 - You MUST call `delta_update` (preferred) or `index_file` after edits
 
-Use `cache_stats` for recommendations. This is a project policy to keep the code index current. Not optional.
+Use `diagnostics("cache")` for recommendations. This is a project policy to keep the code index current. Not optional.
+
+## Full MCP tool reference
+
+- `search_codebase(queries, ...)` — semantic + keyword search across indexed code.
+- `list_directory(path)` — browse indexed files and folders.
+- `api_usage()` — get MCP usage/status information.
+- `usage_analysis(file_path)` — identify unused functions/params in a file.
+- `circular_dependency_check()` — detect import cycles.
+- `dependency_graph(file_paths, depth)` — view import + call graph.
+- `diagnostics(report_type="cache")` — cache health; also `report_type="savings"` for token savings.
+- `delta_update(file_path)` — incrementally re-index changed files.
+- `index_file(file_path)` / `reindex_file(file_path)` — full indexing operations.
+- `remove_index(file_path)` — remove a file from the index.
+- `list_indexed_files(limit, offset)` — list indexed files and metadata.
+- `invalidate_cache(file_path, scope)` — flush stale cache entries.
+- `create_snapshot(message)` / `compare_snapshots(sha_a, sha_b)` — snapshot state and diff changes.
+
+## If the MCP tools are unavailable
+If a GitMem MCP tool call fails or the MCP server is unreachable, you may fall back to standard tools (e.g., `view_file`, `cat`, `grep_search`, `file_search`, `ls`, `find`), but be clear that you are doing so because the MCP tools are not working.
+
 Only exception: use `view_file` when you need exact line numbers for a code edit.
 """
 
@@ -100,16 +163,36 @@ Only exception: use `view_file` when you need exact line numbers for a code edit
 
 WINDSURF_RULES = """\
 
-## Manhattan MCP — MANDATORY
+## GitMem MCP — MANDATORY
 
-This project requires Manhattan MCP for ALL file operations.
+This project requires GitMem MCP for ALL file operations.
 
 - You MUST use `search_codebase` instead of `grep_search` for searching
 - You MUST use `dependency_graph` to understand architecture
 - You MUST use `list_directory` to explore indexed files
 - You MUST call `delta_update` or `index_file` after creating or editing ANY file
 
-Use `cache_stats` to monitor index health. This is a project policy. Skipping these tools breaks the project's code index.
+Use `diagnostics("cache")` to monitor index health. This is a project policy. Skipping these tools breaks the project's code index.
+
+## Full MCP tool reference
+
+- `search_codebase(queries, ...)` — semantic + keyword search across indexed code.
+- `list_directory(path)` — browse indexed files and folders.
+- `api_usage()` — get MCP usage/status information.
+- `usage_analysis(file_path)` — identify unused functions/params in a file.
+- `circular_dependency_check()` — detect import cycles.
+- `dependency_graph(file_paths, depth)` — view import + call graph.
+- `diagnostics(report_type="cache")` — cache health; also `report_type="savings"` for token savings.
+- `delta_update(file_path)` — incrementally re-index changed files.
+- `index_file(file_path)` / `reindex_file(file_path)` — full indexing operations.
+- `remove_index(file_path)` — remove a file from the index.
+- `list_indexed_files(limit, offset)` — list indexed files and metadata.
+- `invalidate_cache(file_path, scope)` — flush stale cache entries.
+- `create_snapshot(message)` / `compare_snapshots(sha_a, sha_b)` — snapshot state and diff changes.
+
+## If the MCP tools are unavailable
+If a GitMem MCP tool call fails or the MCP server is unreachable, you may fall back to standard tools (e.g., `view_file`, `cat`, `grep_search`, `file_search`, `ls`, `find`), but be clear that you are doing so because the MCP tools are not working.
+
 Only exception: use built-in read when you need exact line numbers for a diff.
 """
 
@@ -119,16 +202,36 @@ Only exception: use built-in read when you need exact line numbers for a diff.
 # ============================================================================
 
 COPILOT_RULES = """\
-## Manhattan MCP — MANDATORY
+## GitMem MCP — MANDATORY
 
-This project requires Manhattan MCP for ALL file operations — no exceptions regardless of task size.
+This project requires GitMem MCP for ALL file operations — no exceptions regardless of task size.
 
-- You MUST use `mcp_manhattan_pip_search_codebase` instead of searching/grepping
-- You MUST use `mcp_manhattan_pip_dependency_graph` for import maps
-- You MUST use `mcp_manhattan_pip_list_directory` for navigation
-- You MUST call `mcp_manhattan_pip_delta_update` (preferred) or `index_file` after edits
+- You MUST use `search_codebase` instead of searching/grepping
+- You MUST use `dependency_graph` for import maps
+- You MUST use `list_directory` for navigation
+- You MUST call `delta_update` (preferred) or `index_file` after edits
 
-Use `mcp_manhattan_pip_cache_stats` for health checks. This keeps the project's code index up to date. It is a project policy, not optional.
+Use `diagnostics("cache")` for health checks. This keeps the project's code index up to date. It is a project policy, not optional.
+
+## Full MCP tool reference
+
+- `search_codebase(queries, ...)` — semantic + keyword search across indexed code.
+- `list_directory(path)` — browse indexed files and folders.
+- `api_usage()` — get MCP usage/status information.
+- `usage_analysis(file_path)` — identify unused functions/params in a file.
+- `circular_dependency_check()` — detect import cycles.
+- `dependency_graph(file_paths, depth)` — view import + call graph.
+- `diagnostics(report_type="cache")` — cache health; also `report_type="savings"` for token savings.
+- `delta_update(file_path)` — incrementally re-index changed files.
+- `index_file(file_path)` / `reindex_file(file_path)` — full indexing operations.
+- `remove_index(file_path)` — remove a file from the index.
+- `list_indexed_files(limit, offset)` — list indexed files and metadata.
+- `invalidate_cache(file_path, scope)` — flush stale cache entries.
+- `create_snapshot(message)` / `compare_snapshots(sha_a, sha_b)` — snapshot state and diff changes.
+
+## If the MCP tools are unavailable
+If a GitMem MCP tool call fails or the MCP server is unreachable, you may fall back to standard tools (e.g., `view_file`, `cat`, `grep_search`, `file_search`, `ls`, `find`), but be clear that you are doing so because the MCP tools are not working.
+
 The only exception: use built-in file read when you need exact line numbers for applying a patch.
 """
 
